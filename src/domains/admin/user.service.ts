@@ -43,7 +43,7 @@ export async function getAllUsers(): Promise<AdminUserItem[]> {
       return dbUsers.map((u: any) => ({
         id: u.id,
         name: u.name,
-        email: u.email,
+        email: u.email ?? '',
         role: u.role as UserRole,
         createdAt: u.createdAt,
       }));

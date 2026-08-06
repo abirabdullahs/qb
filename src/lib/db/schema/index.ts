@@ -91,7 +91,7 @@ export const tags = pgTable('tags', {
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 100 }).notNull(),
-  email: varchar('email', { length: 150 }).unique(),
+  email: varchar('email', { length: 150 }).notNull().unique(),
   passwordHash: text('password_hash'),
   role: varchar('role', { length: 20 }).notNull().default('contributor'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
