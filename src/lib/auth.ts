@@ -88,7 +88,19 @@ export function parseSessionToken(token: string): AuthUser | null {
 }
 
 export function getAuthUserFromRequest(req: Request): AuthUser | null {
-  const cookieHeader = req.headers.get('cookie') || '';
+  // Prefer Next.js/NextRequest cookie API when available
+  try {
+    const anyReq: any = req as any;
+    if (anyReq && anyReq.cookies && typeof anyReq.cookies.get === 'function') {
+      const cookieObj = anyReq.cookies.get('qb_session');
+      const token = cookieObj ? cookieObj.value : null;
+      if (token) return parseSessionToken(token);
+    }
+  } catch (e) {
+    // ignore and fallback to header parsing
+  }
+
+  const cookieHeader = (req as Request).headers ? (req as Request).headers.get('cookie') || '' : '';
   const match = cookieHeader.match(/qb_session=([^;]+)/);
   const token = match ? match[1] : null;
   if (!token) return null;

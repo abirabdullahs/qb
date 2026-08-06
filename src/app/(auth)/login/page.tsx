@@ -35,7 +35,19 @@ export default function LoginPage() {
       if (!res.ok || !data.success) {
         throw new Error(data.error || 'Invalid email or password');
       }
-      router.push('/dashboard');
+      // Verify session cookie was set and redirect accordingly
+      try {
+        const meRes = await fetch('/api/auth/me', { credentials: 'include' });
+        if (meRes.ok) {
+          router.push('/dashboard');
+          return;
+        }
+      } catch (e) {
+        // ignore and fallback to full navigation
+      }
+
+      // Fallback: force full navigation to ensure cookie is applied by browser
+      window.location.assign('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Login failed');
     } finally {
