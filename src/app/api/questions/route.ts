@@ -21,16 +21,20 @@ export async function GET(req: NextRequest) {
     // Everyone else is forced to 'approved' regardless of what they pass.
     const status = isReviewer ? requestedStatus : 'approved';
 
+    const tagIdParams = searchParams.getAll('tagId').map((value) => Number(value)).filter((value) => !Number.isNaN(value));
+    const topicIdParams = searchParams.getAll('topicId').map((value) => Number(value)).filter((value) => !Number.isNaN(value));
     const params = {
       segmentId: searchParams.get('segmentId') ? Number(searchParams.get('segmentId')) : undefined,
       subjectId: searchParams.get('subjectId') ? Number(searchParams.get('subjectId')) : undefined,
       chapterId: searchParams.get('chapterId') ? Number(searchParams.get('chapterId')) : undefined,
       topicId: searchParams.get('topicId') ? Number(searchParams.get('topicId')) : undefined,
+      topicIds: topicIdParams.length > 0 ? topicIdParams : undefined,
       questionType: (searchParams.get('questionType') as any) || undefined,
       difficulty: (searchParams.get('difficulty') as any) || undefined,
       status,
       year: searchParams.get('year') ? Number(searchParams.get('year')) : undefined,
       tagId: searchParams.get('tagId') ? Number(searchParams.get('tagId')) : undefined,
+      tagIds: tagIdParams.length > 0 ? tagIdParams : undefined,
       search: searchParams.get('search') || undefined,
       cursor: searchParams.get('cursor') || undefined,
       page: searchParams.get('page') ? Number(searchParams.get('page')) : 1,

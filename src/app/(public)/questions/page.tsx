@@ -19,7 +19,7 @@ import { SubjectItem } from '@/domains/academic/service';
 // server-only code in the browser.
 
 export default function PublicQuestionsPage() {
-  const [filters, setFilters] = useState<QuestionQueryParams>({ page: 1, limit: 10, status: 'approved' });
+  const [filters, setFilters] = useState<QuestionQueryParams>({ page: 1, limit: 100, status: 'approved' });
   const [questions, setQuestions] = useState<FullQuestion[]>([]);
   const [subjects, setSubjects] = useState<SubjectItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,7 +52,16 @@ export default function PublicQuestionsPage() {
         if (filters.chapterId) query.set('chapterId', String(filters.chapterId));
         if (filters.questionType) query.set('questionType', filters.questionType);
         if (filters.difficulty) query.set('difficulty', filters.difficulty);
-        if (filters.tagId) query.set('tagId', String(filters.tagId));
+        if (filters.tagIds && filters.tagIds.length > 0) {
+          filters.tagIds.forEach((tagId) => query.append('tagId', String(tagId)));
+        } else if (filters.tagId) {
+          query.set('tagId', String(filters.tagId));
+        }
+        if (filters.topicIds && filters.topicIds.length > 0) {
+          filters.topicIds.forEach((topicId) => query.append('topicId', String(topicId)));
+        } else if (filters.topicId) {
+          query.set('topicId', String(filters.topicId));
+        }
         // Note: 'status' is still sent for clarity, but the API route now
         // enforces 'approved' server-side for unauthenticated/non-reviewer
         // requests regardless of what's passed here — see FIX in
@@ -61,6 +70,7 @@ export default function PublicQuestionsPage() {
         if (filters.search) query.set('search', filters.search);
         if (filters.cursor) query.set('cursor', String(filters.cursor));
         query.set('page', String(filters.page || 1));
+        query.set('limit', String(filters.limit || 100));
 
         const res = await fetch(`/api/questions?${query.toString()}`);
         const data = await res.json();

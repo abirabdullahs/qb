@@ -1,6 +1,6 @@
 import { db } from '@/lib/db/client';
-import { questions } from '@/lib/db/schema';
-import { eq, and, ilike, or, desc, lt, sql } from 'drizzle-orm';
+import { questions, questionTags } from '@/lib/db/schema';
+import { eq, and, ilike, or, desc, lt, sql, inArray } from 'drizzle-orm';
 import { FullQuestion } from './question.repository';
 
 export interface QuestionQueryParams {
@@ -8,6 +8,9 @@ export interface QuestionQueryParams {
   subjectId?: number;
   chapterId?: number;
   topicId?: number;
+  topicIds?: number[];
+  tagId?: number;
+  tagIds?: number[];
   admissionSegmentId?: number;
   admissionExamId?: number;
   admissionUnitId?: number;
@@ -15,7 +18,6 @@ export interface QuestionQueryParams {
   difficulty?: 'easy' | 'medium' | 'hard';
   status?: 'draft' | 'pending' | 'approved' | 'rejected';
   year?: number;
-  tagId?: number;
   search?: string;
   cursor?: number | string;
   page?: number;
@@ -36,13 +38,15 @@ export async function queryQuestions(params: QuestionQueryParams): Promise<Pagin
   const page = params.page || 1;
   const limit = params.limit || 10;
   const cursorNum = params.cursor ? Number(params.cursor) : null;
+  const topicFilterIds = params.topicIds?.length ? params.topicIds : params.topicId ? [params.topicId] : undefined;
+  const tagFilterIds = params.tagIds?.length ? params.tagIds : params.tagId ? [params.tagId] : undefined;
 
   const conditions = [];
 
   if (params.segmentId) conditions.push(eq(questions.segmentId, params.segmentId));
   if (params.subjectId) conditions.push(eq(questions.subjectId, params.subjectId));
   if (params.chapterId) conditions.push(eq(questions.chapterId, params.chapterId));
-  if (params.topicId) conditions.push(eq(questions.topicId, params.topicId));
+  if (topicFilterIds) conditions.push(inArray(questions.topicId, topicFilterIds));
   if (params.admissionSegmentId) conditions.push(eq(questions.admissionSegmentId, params.admissionSegmentId));
   if (params.admissionExamId) conditions.push(eq(questions.admissionExamId, params.admissionExamId));
   if (params.admissionUnitId) conditions.push(eq(questions.admissionUnitId, params.admissionUnitId));
@@ -60,6 +64,27 @@ export async function queryQuestions(params: QuestionQueryParams): Promise<Pagin
         ilike(questions.examName, term)
       )
     );
+  }
+
+  if (tagFilterIds && tagFilterIds.length > 0) {
+    const rows = await db
+      .select({ questionId: questionTags.questionId })
+      .from(questionTags)
+      .where(inArray(questionTags.tagId, tagFilterIds))
+      .groupBy(questionTags.questionId);
+    const questionIds = rows.map((row: { questionId: number }) => row.questionId);
+    if (questionIds.length === 0) {
+      return {
+        data: [],
+        total: 0,
+        page,
+        limit,
+        totalPages: 0,
+        nextCursor: null,
+        hasMore: false,
+      };
+    }
+    conditions.push(inArray(questions.id, questionIds));
   }
 
   if (cursorNum && !isNaN(cursorNum)) {
