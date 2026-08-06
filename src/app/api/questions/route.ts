@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
       year: searchParams.get('year') ? Number(searchParams.get('year')) : undefined,
       tagId: searchParams.get('tagId') ? Number(searchParams.get('tagId')) : undefined,
       search: searchParams.get('search') || undefined,
+      cursor: searchParams.get('cursor') || undefined,
       page: searchParams.get('page') ? Number(searchParams.get('page')) : 1,
       limit: searchParams.get('limit') ? Number(searchParams.get('limit')) : 10,
     };

@@ -17,6 +17,7 @@
     "@types/bcryptjs": "^3.0.0",
     "@types/katex": "^0.16.8",
     "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.10.0",
     "dotenv": "^16.4.0",
     "drizzle-orm": "^0.36.0",
     "katex": "^0.18.1",

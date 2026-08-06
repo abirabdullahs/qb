@@ -1,6 +1,6 @@
 import { db } from '@/lib/db/client';
 import { questions } from '@/lib/db/schema';
-import { eq, and, like, desc, sql } from 'drizzle-orm';
+import { eq, and, like, desc, lt, sql } from 'drizzle-orm';
 import { FullQuestion, getAllMockQuestions } from './question.repository';
 
 export interface QuestionQueryParams {
@@ -17,6 +17,7 @@ export interface QuestionQueryParams {
   year?: number;
   tagId?: number;
   search?: string;
+  cursor?: number | string;
   page?: number;
   limit?: number;
 }
@@ -24,14 +25,17 @@ export interface QuestionQueryParams {
 export interface PaginatedResult<T> {
   data: T[];
   total: number;
-  page: number;
+  page?: number;
   limit: number;
-  totalPages: number;
+  totalPages?: number;
+  nextCursor?: number | null;
+  hasMore?: boolean;
 }
 
 export async function queryQuestions(params: QuestionQueryParams): Promise<PaginatedResult<FullQuestion>> {
   const page = params.page || 1;
   const limit = params.limit || 10;
+  const cursorNum = params.cursor ? Number(params.cursor) : null;
 
   try {
     const conditions = [];
@@ -49,26 +53,41 @@ export async function queryQuestions(params: QuestionQueryParams): Promise<Pagin
     if (params.year) conditions.push(eq(questions.year, params.year));
     if (params.search) conditions.push(like(questions.questionText, `%${params.search}%`));
 
+    if (cursorNum && !isNaN(cursorNum)) {
+      conditions.push(lt(questions.id, cursorNum));
+    }
+
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-    const dbQuestions = await db
+    const queryBuilder = db
       .select()
       .from(questions)
       .where(whereClause)
       .orderBy(desc(questions.id))
-      .limit(limit)
-      .offset((page - 1) * limit);
+      .limit(limit + 1);
+
+    if (!cursorNum) {
+      queryBuilder.offset((page - 1) * limit);
+    }
+
+    const dbQuestions = await queryBuilder;
 
     if (dbQuestions && dbQuestions.length > 0) {
+      const hasMore = dbQuestions.length > limit;
+      const data = hasMore ? dbQuestions.slice(0, limit) : dbQuestions;
+      const nextCursor = hasMore ? (data[data.length - 1] as any).id : null;
+
       const countRes = await db.select({ count: sql<number>`count(*)` }).from(questions).where(whereClause);
       const total = Number(countRes[0]?.count || dbQuestions.length);
 
       return {
-        data: dbQuestions as unknown as FullQuestion[],
+        data: data as unknown as FullQuestion[],
         total,
         page,
         limit,
         totalPages: Math.ceil(total / limit),
+        nextCursor,
+        hasMore,
       };
     }
   } catch {}
@@ -90,8 +109,27 @@ export async function queryQuestions(params: QuestionQueryParams): Promise<Pagin
     mock = mock.filter((q) => q.questionText.toLowerCase().includes(s) || (q.stimulusText && q.stimulusText.toLowerCase().includes(s)));
   }
 
+  mock.sort((a, b) => b.id - a.id);
+
+  if (cursorNum && !isNaN(cursorNum)) {
+    mock = mock.filter((q) => q.id < cursorNum);
+  }
+
   const total = mock.length;
-  const paginated = mock.slice((page - 1) * limit, page * limit);
+  let paginated: FullQuestion[];
+  let hasMore = false;
+  let nextCursor: number | null = null;
+
+  if (cursorNum) {
+    const items = mock.slice(0, limit + 1);
+    hasMore = items.length > limit;
+    paginated = hasMore ? items.slice(0, limit) : items;
+    nextCursor = hasMore ? paginated[paginated.length - 1].id : null;
+  } else {
+    paginated = mock.slice((page - 1) * limit, page * limit);
+    hasMore = page * limit < total;
+    nextCursor = paginated.length > 0 ? paginated[paginated.length - 1].id : null;
+  }
 
   return {
     data: paginated,
@@ -99,5 +137,8 @@ export async function queryQuestions(params: QuestionQueryParams): Promise<Pagin
     page,
     limit,
     totalPages: Math.ceil(total / limit) || 1,
+    nextCursor,
+    hasMore,
   };
 }
+

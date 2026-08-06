@@ -1,4 +1,5 @@
 import { LocalStorageProvider } from '@/lib/storage/local-provider';
+import { CloudinaryStorageProvider } from '@/lib/storage/cloudinary-provider';
 
 export interface UploadResult {
   url: string;
@@ -31,6 +32,17 @@ export class DataUrlStorageProvider implements StorageProvider {
 
 export function getStorageProvider(): StorageProvider {
   const provider = process.env.STORAGE_PROVIDER || 'local';
+
+  if (provider === 'cloudinary') {
+    const cloudinaryProvider = new CloudinaryStorageProvider();
+    if (cloudinaryProvider.isConfigured()) {
+      return cloudinaryProvider as StorageProvider;
+    } else {
+      console.warn('STORAGE_PROVIDER is set to cloudinary, but credentials are not set. Falling back to DataUrlStorageProvider.');
+      return new DataUrlStorageProvider();
+    }
+  }
+
   if (provider === 'local') {
     try {
       return new LocalStorageProvider() as unknown as StorageProvider;
@@ -38,5 +50,7 @@ export function getStorageProvider(): StorageProvider {
       return new DataUrlStorageProvider();
     }
   }
+
   return new DataUrlStorageProvider();
 }
+

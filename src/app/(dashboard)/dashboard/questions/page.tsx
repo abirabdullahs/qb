@@ -8,8 +8,8 @@ import { QuestionQueryParams } from '@/domains/question/question.queries';
 import { FullQuestion } from '@/domains/question/question.repository';
 import { getCurriculumTree, SubjectItem } from '@/domains/academic/service';
 
-export default function PublicQuestionsPage() {
-  const [filters, setFilters] = useState<QuestionQueryParams>({ page: 1, limit: 10, status: 'approved' });
+export default function DashboardQuestionsPage() {
+  const [filters, setFilters] = useState<QuestionQueryParams>({ page: 1, limit: 10 });
   const [questions, setQuestions] = useState<FullQuestion[]>([]);
   const [subjects, setSubjects] = useState<SubjectItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,8 +30,8 @@ export default function PublicQuestionsPage() {
         if (filters.chapterId) query.set('chapterId', String(filters.chapterId));
         if (filters.questionType) query.set('questionType', filters.questionType);
         if (filters.difficulty) query.set('difficulty', filters.difficulty);
+        if (filters.status) query.set('status', filters.status);
         if (filters.tagId) query.set('tagId', String(filters.tagId));
-        query.set('status', 'approved'); // public users only browse approved questions
         if (filters.search) query.set('search', filters.search);
         if (filters.cursor) query.set('cursor', String(filters.cursor));
         query.set('page', String(filters.page || 1));
@@ -53,15 +53,58 @@ export default function PublicQuestionsPage() {
     fetchQuestions();
   }, [filters]);
 
+  const handleStatusChange = async (id: number, status: 'approved' | 'rejected' | 'pending') => {
+    try {
+      await fetch(`/api/questions/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      setQuestions((prev) => prev.map((q) => (q.id === id ? { ...q, status } : q)));
+    } catch (err) {
+      alert('Failed to update status');
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this question?')) return;
+    try {
+      await fetch(`/api/questions/${id}`, { method: 'DELETE' });
+      setQuestions((prev) => prev.filter((q) => q.id !== id));
+      setTotal((t) => t - 1);
+    } catch (err) {
+      alert('Failed to delete question');
+    }
+  };
+
   return (
-    <div style={{ padding: '2rem 1rem', maxWidth: '1100px', margin: '0 auto' }}>
-      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2.25rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem' }}>
-          Practice Question Bank (প্রশ্ন ব্যাংক)
-        </h1>
-        <p style={{ color: '#64748b', fontSize: '1rem', maxWidth: '600px', margin: '0 auto' }}>
-          Explore thousands of verified HSC, SSC, and Admission test questions with step-by-step solutions and KaTeX mathematical notation.
-        </p>
+    <div style={{ padding: '1.5rem', maxWidth: '1200px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <div>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+            Question Repository (প্রশ্ন ব্যাংক)
+          </h1>
+          <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '0.25rem' }}>
+            Manage, filter, review and edit MCQ, CQ, and Written questions
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <Link
+            href="/dashboard/questions/bulk"
+            className="btn btn-secondary"
+            style={{ padding: '0.6rem 1.25rem', fontSize: '0.9rem', fontWeight: 600 }}
+          >
+            Bulk JSON Import
+          </Link>
+          <Link
+            href="/dashboard/questions/new"
+            className="btn btn-primary"
+            style={{ padding: '0.6rem 1.25rem', fontSize: '0.9rem', fontWeight: 600 }}
+          >
+            + Add New Question
+          </Link>
+        </div>
       </div>
 
       <QuestionFilters
@@ -72,12 +115,12 @@ export default function PublicQuestionsPage() {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <div style={{ fontSize: '0.9rem', color: '#475569', fontWeight: 600 }}>
-          Available Questions: {total}
+          Showing {questions.length} of {total} questions
         </div>
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>Loading practice questions...</div>
+        <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>Loading questions...</div>
       ) : questions.length === 0 ? (
         <div
           style={{
@@ -89,16 +132,23 @@ export default function PublicQuestionsPage() {
             color: '#64748b',
           }}
         >
-          No practice questions found matching your criteria.
+          No questions found matching your filter criteria.
         </div>
       ) : (
         <>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             {questions.map((q) => (
-              <QuestionCard key={q.id} question={q} isAdminOrMod={false} />
+              <QuestionCard
+                key={q.id}
+                question={q}
+                onStatusChange={handleStatusChange}
+                onDelete={handleDelete}
+                isAdminOrMod={true}
+              />
             ))}
           </div>
 
+          {/* Cursor & Offset Pagination Controls */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
             <button
               className="btn btn-secondary"
@@ -110,7 +160,7 @@ export default function PublicQuestionsPage() {
             </button>
 
             <span style={{ fontSize: '0.875rem', color: '#64748b', fontWeight: 600 }}>
-              Page {filters.page || 1}
+              Page {filters.page || 1} {filters.cursor ? `(Cursor: ${filters.cursor})` : ''}
             </span>
 
             <button
