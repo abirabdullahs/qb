@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { QuestionSetRecord } from '@/domains/question-set/question-set.repository';
+import type { QuestionSetRecord } from '@/domains/question-set/question-set.repository';
 import MockTestPlayer from '@/domains/question-set/MockTestPlayer';
 import Link from 'next/link';
 

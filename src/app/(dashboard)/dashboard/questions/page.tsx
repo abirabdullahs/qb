@@ -4,9 +4,9 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import QuestionFilters from '@/domains/question/QuestionFilters';
 import QuestionCard from '@/domains/question/QuestionCard';
-import { QuestionQueryParams } from '@/domains/question/question.queries';
-import { FullQuestion } from '@/domains/question/question.repository';
-import { getCurriculumTree, SubjectItem } from '@/domains/academic/service';
+import type { QuestionQueryParams } from '@/domains/question/question.queries';
+import type { FullQuestion } from '@/domains/question/question.repository';
+import type { SubjectItem } from '@/domains/academic/service';
 
 export default function DashboardQuestionsPage() {
   const [filters, setFilters] = useState<QuestionQueryParams>({ page: 1, limit: 10 });
@@ -18,7 +18,18 @@ export default function DashboardQuestionsPage() {
   const [nextCursor, setNextCursor] = useState<number | null>(null);
 
   useEffect(() => {
-    getCurriculumTree().then(setSubjects);
+    async function loadSubjects() {
+      try {
+        const res = await fetch('/api/academic/tree');
+        if (!res.ok) throw new Error('Failed to load subject tree');
+        const json = await res.json();
+        setSubjects(json.data || []);
+      } catch (err) {
+        console.error('Failed to load curriculum tree:', err);
+      }
+    }
+
+    loadSubjects();
   }, []);
 
   useEffect(() => {

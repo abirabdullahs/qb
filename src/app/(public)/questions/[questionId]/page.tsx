@@ -3,7 +3,7 @@
 import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import QuestionCard from '@/domains/question/QuestionCard';
-import { FullQuestion } from '@/domains/question/question.repository';
+import type { FullQuestion } from '@/domains/question/question.repository';
 
 export default function SingleQuestionPage({ params }: { params: Promise<{ questionId: string }> }) {
   const { questionId } = use(params);

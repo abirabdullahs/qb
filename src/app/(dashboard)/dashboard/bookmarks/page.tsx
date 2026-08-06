@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { FullQuestion } from '@/domains/question/question.repository';
+import type { FullQuestion } from '@/domains/question/question.repository';
 import QuestionCard from '@/domains/question/QuestionCard';
 import { Bookmark, Loader2, BookOpen, Search } from 'lucide-react';
 import Link from 'next/link';

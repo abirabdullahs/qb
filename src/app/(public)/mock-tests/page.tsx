@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { QuestionSetRecord } from '@/domains/question-set/question-set.repository';
+import type { QuestionSetRecord } from '@/domains/question-set/question-set.repository';
 
 export default function PublicMockTestsPage() {
   const [sets, setSets] = useState<QuestionSetRecord[]>([]);

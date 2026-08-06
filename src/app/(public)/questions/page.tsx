@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import QuestionFilters from '@/domains/question/QuestionFilters';
 import QuestionCard from '@/domains/question/QuestionCard';
-import { QuestionQueryParams } from '@/domains/question/question.queries';
-import { FullQuestion } from '@/domains/question/question.repository';
+import type { QuestionQueryParams } from '@/domains/question/question.queries';
+import type { FullQuestion } from '@/domains/question/question.repository';
 import { SubjectItem } from '@/domains/academic/service';
 
 // FIX: this file is a 'use client' component but previously imported

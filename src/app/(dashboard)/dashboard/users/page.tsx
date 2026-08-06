@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Users, UserPlus, Shield, CheckCircle, AlertCircle, Loader2, Search } from 'lucide-react';
-import { AdminUserItem } from '@/domains/admin/user.service';
+import type { AdminUserItem } from '@/domains/admin/user.service';
 
 export default function UserManagementPage() {
   const [usersList, setUsersList] = useState<AdminUserItem[]>([]);
