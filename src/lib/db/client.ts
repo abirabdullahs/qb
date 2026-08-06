@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/neon-http";
 import * as schema from "./schema";
 
 let db: any;
+let isMockDb = false;
 
 function createMockDb() {
   const createChainable = (): any => {
@@ -50,6 +51,7 @@ try {
 } catch {
   console.warn('[AI Studio] Database not connected — using mock client');
   db = createMockDb();
+  isMockDb = true;
 }
 
-export { db };
+export { db, isMockDb };

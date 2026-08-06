@@ -195,10 +195,16 @@ export async function insertQuestionRecord(data: FullQuestion): Promise<FullQues
       }
       return { ...newQ, id: qId };
     }
-  } catch {}
-
-  mockQuestionsStore.unshift(newQ);
-  return newQ;
+  } catch (err) {
+    console.error('[insertQuestionRecord] Database insert failed:', err);
+    // If no real database configured, fall back to mock store for local/dev convenience
+    if (!process.env.DATABASE_URL) {
+      mockQuestionsStore.unshift(newQ);
+      return newQ;
+    }
+    // With a configured DATABASE_URL we should not silently succeed — propagate error
+    throw err;
+  }
 }
 
 export async function updateQuestionRecord(id: number, updates: Partial<FullQuestion>): Promise<FullQuestion | null> {
