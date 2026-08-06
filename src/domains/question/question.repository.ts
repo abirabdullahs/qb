@@ -142,6 +142,10 @@ export async function insertQuestionRecord(data: FullQuestion): Promise<FullQues
         // ignore - let DB handle missing segment
       }
     }
+    // If DB is configured and we still have no segment id, fail early with a clear message
+    if (!segmentIdToUse && process.env.DATABASE_URL) {
+      throw new Error('No segmentId provided and no segment rows found in DB. Create a segment or provide segmentId in the payload.');
+    }
 
     const inserted = await db
       .insert(questions)
