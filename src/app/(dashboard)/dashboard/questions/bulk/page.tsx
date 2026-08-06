@@ -203,7 +203,9 @@ export default function BulkUploadPage() {
           if (matchedTopic) {
             resolvedTopicId = matchedTopic.id;
           } else {
-            throw new Error(`Topic "${topicName}" was not found in the selected chapter. Please use a valid topic name or topic ID.`);
+            // Topic not found locally — leave topicId undefined and keep topicName
+            // so the backend can `resolveOrCreateTopic` and create the topic if needed.
+            resolvedTopicId = undefined;
           }
         } else if (topicId) {
           resolvedTopicId = Number(topicId);
