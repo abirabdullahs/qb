@@ -132,14 +132,32 @@ export async function insertQuestionRecord(data: FullQuestion): Promise<FullQues
   };
 
   try {
-    // If DB is configured but incoming data lacks segmentId, try to pick a sensible default.
+    // If incoming data lacks `segmentId`, infer from `branchType` (academic -> 1, admission -> 2),
+    // otherwise try to pick a sensible default from the DB when configured.
     let segmentIdToUse = data.segmentId ?? null;
+    if (!segmentIdToUse && data.branchType) {
+      if (data.branchType === 'academic') segmentIdToUse = 1;
+      else if (data.branchType === 'admission') segmentIdToUse = 2;
+    }
     if (!segmentIdToUse && process.env.DATABASE_URL) {
       try {
         const segs = await db.select().from(segments).limit(1);
-        if (segs && segs.length > 0) segmentIdToUse = segs[0].id;
+        if (segs && segs.length > 0) {
+          segmentIdToUse = segs[0].id;
+        } else {
+          // No segments exist yet — create a default segment using branchType
+          const defaultName = data.branchType === 'admission' ? 'Admission' : 'Academic';
+          const defaultCode = data.branchType === 'admission' ? 'admission' : 'academic';
+          const insertedSeg = await db
+            .insert(segments)
+            .values({ name: defaultName, code: defaultCode, segmentKind: 'curriculum' })
+            .returning();
+          if (insertedSeg && insertedSeg[0]) {
+            segmentIdToUse = insertedSeg[0].id;
+          }
+        }
       } catch (err) {
-        // ignore - let DB handle missing segment
+        // ignore - let DB handle missing segment or surface error later
       }
     }
     // If DB is configured and we still have no segment id, fail early with a clear message
