@@ -79,12 +79,33 @@ export async function insertQuestionRecord(data: FullQuestion): Promise<FullQues
   // 'admission') if none was provided. That corrupted data and hid a
   // missing required field. segmentId must now be a real, valid value
   // supplied by the caller (the form/service layer) — no guessing.
+  // The `segments` table always has at least an academic and an admission
+  // segment row (see FIX below for admission handling) — but the
+  // `questions.segment_id` column itself is NOT NULL in the schema, so
+  // TypeScript (correctly) refuses a `number | null` value here. We
+  // resolve a concrete number before building the insert payload instead
+  // of passing a nullable value through to Drizzle.
   if (data.branchType === 'academic' && !data.segmentId) {
     throw new Error(
       'segmentId is required for academic-branch questions (e.g. SSC, HSC, Dakhil, Alim). ' +
       'Select a segment in the question form before submitting.'
     );
   }
+  if (data.branchType === 'admission' && !data.segmentId) {
+    throw new Error(
+      'segmentId is required even for admission-branch questions — pass the ' +
+      "id of the 'Admission' segment row. Look it up via /api/academic/segments " +
+      "and cache it, rather than leaving this to the database layer to guess."
+    );
+  }
+  // Final unconditional narrowing check (in addition to the two branch-
+  // specific messages above) so TypeScript can guarantee a plain `number`
+  // reaches db.insert() below — the questions.segment_id column is
+  // NOT NULL, so `number | null | undefined` is never a valid insert value.
+  if (data.segmentId == null) {
+    throw new Error('segmentId is required for all questions.');
+  }
+  const resolvedSegmentId: number = data.segmentId;
 
   // FIX: the whole multi-table write (question + options + sub-parts) now
   // runs inside a single DB transaction. If any insert fails partway
@@ -94,7 +115,7 @@ export async function insertQuestionRecord(data: FullQuestion): Promise<FullQues
     const inserted = await tx
       .insert(questions)
       .values({
-        segmentId: data.segmentId ?? null,
+        segmentId: resolvedSegmentId,
         groupId: data.groupId || null,
         admissionSegmentId: data.admissionSegmentId || null,
         admissionExamId: data.admissionExamId || null,

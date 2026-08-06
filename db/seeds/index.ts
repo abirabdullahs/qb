@@ -1,5 +1,5 @@
+import "dotenv/config";
 import { seedDatabase } from '../../src/lib/db/seed';
-
 async function main() {
   console.log('Running database seed script...');
   const result = await seedDatabase();

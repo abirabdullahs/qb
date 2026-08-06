@@ -37,8 +37,16 @@ export default function QuestionForm({ initialData, onSubmit, isSubmitting = fal
   const [branchType, setBranchType] = useState<'academic' | 'admission'>(initialData?.branchType || 'academic');
 
   // Academic Domain State
+  // NOTE: `segments` holds ONLY academic-kind segments (SSC/HSC/Dakhil/Alim)
+  // for the dropdown below. `admissionSegmentRowId` is resolved separately
+  // and automatically — schema.sql defines questions.segment_id as NOT NULL
+  // unconditionally, so even admission-branch questions need a valid
+  // segment_id pointing at the single "Admission" segment row (not to be
+  // confused with admissionSegmentId, which points at Engineering/Medical/
+  // Varsity in the admission_segments table — a different table entirely).
   const [segments, setSegments] = useState<Segment[]>([]);
   const [segmentId, setSegmentId] = useState<number | undefined>(initialData?.segmentId);
+  const [admissionSegmentRowId, setAdmissionSegmentRowId] = useState<number | undefined>(undefined);
   const [subjects, setSubjects] = useState<SubjectItem[]>([]);
   const [subjectId, setSubjectId] = useState<number | undefined>(initialData?.subjectId);
   const [chapterId, setChapterId] = useState<number | undefined>(initialData?.chapterId);
@@ -110,6 +118,13 @@ export default function QuestionForm({ initialData, onSubmit, isSubmitting = fal
             const firstAcademic = segList.find((s) => s.segmentKind === 'academic');
             if (firstAcademic) setSegmentId(firstAcademic.id);
           }
+          // Resolve the single "Admission" segment row id so it can be
+          // sent automatically when branchType === 'admission' — the user
+          // never picks this directly, it's an internal requirement of
+          // the NOT NULL segment_id column, distinct from admissionSegmentId
+          // (Engineering/Medical/Varsity) which the user DOES pick below.
+          const adminSeg = segList.find((s) => s.segmentKind === 'admission');
+          if (adminSeg) setAdmissionSegmentRowId(adminSeg.id);
         }
 
         if (treeRes.ok) {
@@ -180,6 +195,17 @@ export default function QuestionForm({ initialData, onSubmit, isSubmitting = fal
       setErrorMsg('Please select a Subject before submitting.');
       return;
     }
+    if (branchType === 'admission' && !admissionSegmentRowId) {
+      setErrorMsg(
+        'Could not resolve the required "Admission" segment row. Make sure a ' +
+        "segment with segmentKind='admission' exists in the database (see db/seeds)."
+      );
+      return;
+    }
+    if (branchType === 'admission' && !subjectId) {
+      setErrorMsg('Please select a Subject before submitting.');
+      return;
+    }
 
     const payload = {
       branchType,
@@ -187,7 +213,10 @@ export default function QuestionForm({ initialData, onSubmit, isSubmitting = fal
       chapterId: branchType === 'academic' ? chapterId : undefined,
       topicId: branchType === 'academic' ? topicId : undefined,
       topicName: branchType === 'academic' && topicName.trim() ? topicName.trim() : undefined,
-      segmentId: branchType === 'academic' ? segmentId : undefined,
+      // segment_id is NOT NULL on every question row regardless of branch —
+      // academic questions use the user-picked SSC/HSC/etc. segment,
+      // admission questions use the single resolved "Admission" segment row.
+      segmentId: branchType === 'academic' ? segmentId : admissionSegmentRowId,
       admissionSegmentId: branchType === 'admission' ? admissionSegmentId : undefined,
       admissionExamId: branchType === 'admission' ? admissionExamId : undefined,
       admissionUnitId: branchType === 'admission' ? admissionUnitId : undefined,
@@ -343,6 +372,28 @@ export default function QuestionForm({ initialData, onSubmit, isSubmitting = fal
       ) : (
         /* Admission Branch Selectors */
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+          <div>
+            {/* FIX: subject_id is NOT NULL on every question row, including
+                admission-branch ones (e.g. an admission Physics question
+                still needs to point at the "Physics" subject row) — this
+                selector was previously missing entirely, so submitting an
+                admission question would always fail the NOT NULL
+                constraint at the database level with an unclear error. */}
+            <label className="form-label">Subject (বিষয়) *</label>
+            <select
+              className="form-input"
+              value={subjectId || ''}
+              onChange={(e) => setSubjectId(e.target.value ? Number(e.target.value) : undefined)}
+            >
+              <option value="">-- Select Subject --</option>
+              {subjects.map((sub) => (
+                <option key={sub.id} value={sub.id}>
+                  {sub.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div>
             <label className="form-label">Admission Segment</label>
             <select
