@@ -1,5 +1,5 @@
 'use client';
-
+import "dotenv/config";
 import React, { useState, useEffect } from 'react';
 import QuestionFilters from '@/domains/question/QuestionFilters';
 import QuestionCard from '@/domains/question/QuestionCard';
