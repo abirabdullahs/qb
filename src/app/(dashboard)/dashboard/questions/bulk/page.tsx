@@ -227,6 +227,7 @@ export default function BulkUploadPage() {
     try {
       const res = await fetch('/api/questions/bulk', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(enrichedQuestions),
       });
