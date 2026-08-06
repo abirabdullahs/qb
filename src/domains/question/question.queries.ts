@@ -1,6 +1,6 @@
 import { db } from '@/lib/db/client';
 import { questions } from '@/lib/db/schema';
-import { eq, and, like, desc, lt, sql } from 'drizzle-orm';
+import { eq, and, ilike, or, desc, lt, sql } from 'drizzle-orm';
 import { FullQuestion, getAllMockQuestions } from './question.repository';
 
 export interface QuestionQueryParams {
@@ -51,7 +51,17 @@ export async function queryQuestions(params: QuestionQueryParams): Promise<Pagin
     if (params.difficulty) conditions.push(eq(questions.difficulty, params.difficulty));
     if (params.status) conditions.push(eq(questions.status, params.status));
     if (params.year) conditions.push(eq(questions.year, params.year));
-    if (params.search) conditions.push(like(questions.questionText, `%${params.search}%`));
+    if (params.search) {
+      const term = `%${params.search}%`;
+      conditions.push(
+        or(
+          ilike(questions.questionText, term),
+          ilike(questions.explanationText, term),
+          ilike(questions.stimulusText, term),
+          ilike(questions.examName, term)
+        )
+      );
+    }
 
     if (cursorNum && !isNaN(cursorNum)) {
       conditions.push(lt(questions.id, cursorNum));
