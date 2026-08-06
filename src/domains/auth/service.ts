@@ -73,7 +73,7 @@ export async function loginUser(email: string, password: string): Promise<{ user
     id: dbUser.id,
     name: dbUser.name,
     email: dbUser.email || normalizedEmail,
-    role: (dbUser.role as UserRole) || 'contributor',
+    role: (dbUser.role as UserRole) || 'student',
   };
 
   const token = createSessionToken(user);
@@ -82,7 +82,7 @@ export async function loginUser(email: string, password: string): Promise<{ user
 
 export async function registerUser(name: string, email: string, password: string, roleInput?: string): Promise<{ user: AuthUser; token: string }> {
   const normalizedEmail = email.trim().toLowerCase();
-  const role: UserRole = (roleInput as UserRole) || 'contributor';
+  const role: UserRole = (roleInput as UserRole) || 'student';
 
   try {
     const existing = await db.select().from(users).where(eq(users.email, normalizedEmail));

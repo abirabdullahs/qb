@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
       return apiError('Password must be at least 6 characters', 400);
     }
 
-    const { user, token } = await registerUser(name, email, password, role);
+    const { user, token } = await registerUser(name, email, password, 'student');
 
     const response = apiSuccess({ user, token }, 'Registration successful', 201);
     response.cookies.set('qb_session', token, {

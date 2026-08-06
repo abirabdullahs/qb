@@ -8,7 +8,6 @@ export default function RegisterPage() {
   const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState('contributor');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -22,7 +21,7 @@ export default function RegisterPage() {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, role, password }),
+        body: JSON.stringify({ name, email, password }),
       });
       
       const rawText = await res.text();
@@ -52,7 +51,7 @@ export default function RegisterPage() {
             Register Account
           </h1>
           <p style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '1.5rem' }}>
-            Join the Question Bank platform to contribute or practice questions.
+            Create your free Student account to practice questions and save bookmarks for revision.
           </p>
 
           {error && (
@@ -67,7 +66,7 @@ export default function RegisterPage() {
               <input
                 type="text"
                 className="form-input"
-                placeholder="Abir Abdullah"
+                placeholder="e.g. Tanvir Ahmed"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
@@ -79,7 +78,7 @@ export default function RegisterPage() {
               <input
                 type="email"
                 className="form-input"
-                placeholder="user@example.com"
+                placeholder="student@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -87,25 +86,20 @@ export default function RegisterPage() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Account Role</label>
-              <select className="form-select" value={role} onChange={(e) => setRole(e.target.value)}>
-                <option value="contributor">Contributor (Add Questions)</option>
-                <option value="teacher">Teacher / Academic Staff</option>
-                <option value="moderator">Moderator (Review Queue)</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
-
-            <div className="form-group">
               <label className="form-label">Password</label>
               <input
                 type="password"
                 className="form-input"
-                placeholder="••••••••"
+                placeholder="Minimum 6 characters"
+                minLength={6}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
+            </div>
+
+            <div style={{ padding: '0.65rem 0.85rem', background: '#F0F4F1', borderRadius: '8px', border: '1px solid #A7C4A0', fontSize: '0.8rem', color: '#2D3748', marginBottom: '1rem' }}>
+              <strong>Note:</strong> Public registrations are automatically assigned the <strong>Student</strong> role. Staff accounts (Admin, Moderator, Contributor) are managed by site administrators.
             </div>
 
             <button
@@ -114,7 +108,7 @@ export default function RegisterPage() {
               className="btn btn-primary"
               style={{ width: '100%', marginTop: '0.5rem', padding: '0.75rem' }}
             >
-              {loading ? 'Creating Account...' : 'Create Account'}
+              {loading ? 'Creating Account...' : 'Register as Student'}
             </button>
           </form>
 

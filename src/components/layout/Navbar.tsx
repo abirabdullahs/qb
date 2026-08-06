@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, User, LogIn, Menu, X } from 'lucide-react';
+import { BookOpen, User, LogIn, Menu, X, LayoutDashboard, Bookmark, Search } from 'lucide-react';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -11,7 +11,7 @@ export default function Navbar() {
 
   return (
     <header className="navbar">
-      <div className="app-container navbar-inner" style={{ position: 'relative' }}>
+      <div className="app-container navbar-inner">
         <Link href="/" className="logo">
           <div className="logo-icon">
             <BookOpen size={18} />
@@ -36,7 +36,7 @@ export default function Navbar() {
         </nav>
 
         {/* Desktop Auth Buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }} className="desktop-actions">
+        <div className="desktop-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <Link href="/login" className="btn btn-secondary" style={{ padding: '0.4rem 0.875rem' }}>
             <LogIn size={16} />
             <span>Login</span>
@@ -45,91 +45,93 @@ export default function Navbar() {
             <User size={16} />
             <span>Register</span>
           </Link>
-          
-          {/* Mobile Toggle Button */}
-          <button
-            type="button"
-            className="mobile-toggle-btn"
-            onClick={() => setMobileMenuOpen((prev) => !prev)}
-            aria-label="Toggle navigation menu"
-            style={{
-              display: 'none',
-              background: 'none',
-              border: 'none',
-              color: 'var(--color-text-primary)',
-              padding: '0.5rem',
-              cursor: 'pointer',
-            }}
-          >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
         </div>
 
-        {/* Mobile Navigation Dropdown */}
+        {/* Mobile Hamburger Toggle Button */}
+        <button
+          type="button"
+          className="mobile-hamburger-nav-btn"
+          onClick={() => setMobileMenuOpen((prev) => !prev)}
+          aria-label="Toggle navigation menu"
+        >
+          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+
+        {/* Mobile Navigation Drawer Overlay */}
         {mobileMenuOpen && (
-          <div
-            style={{
-              position: 'absolute',
-              top: '100%',
-              left: 0,
-              right: 0,
-              background: 'var(--color-surface)',
-              borderBottom: '1px solid var(--color-border)',
-              boxShadow: 'var(--shadow-md)',
-              padding: '1rem 1.25rem',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '1rem',
-              zIndex: 100,
-            }}
-          >
-            <Link
-              href="/questions"
-              className={`nav-link ${pathname === '/questions' ? 'active' : ''}`}
+          <>
+            <div
+              className="mobile-drawer-backdrop"
               onClick={() => setMobileMenuOpen(false)}
-              style={{ fontSize: '1rem', padding: '0.5rem 0' }}
-            >
-              Browse Questions
-            </Link>
-            <Link
-              href="/dashboard"
-              className={`nav-link ${pathname.startsWith('/dashboard') ? 'active' : ''}`}
-              onClick={() => setMobileMenuOpen(false)}
-              style={{ fontSize: '1rem', padding: '0.5rem 0' }}
-            >
-              Dashboard
-            </Link>
-            <div style={{ display: 'flex', gap: '0.75rem', paddingTop: '0.5rem', borderTop: '1px solid var(--color-border)' }}>
-              <Link
-                href="/login"
-                className="btn btn-secondary"
-                onClick={() => setMobileMenuOpen(false)}
-                style={{ flex: 1, justifyContent: 'center' }}
-              >
-                <LogIn size={16} />
-                <span>Login</span>
-              </Link>
-              <Link
-                href="/register"
-                className="btn btn-primary"
-                onClick={() => setMobileMenuOpen(false)}
-                style={{ flex: 1, justifyContent: 'center' }}
-              >
-                <User size={16} />
-                <span>Register</span>
-              </Link>
+            />
+            <div className="mobile-nav-drawer">
+              <div className="mobile-nav-drawer-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700 }}>
+                  <BookOpen size={18} color="var(--color-primary)" />
+                  <span>Question Bank Menu</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMobileMenuOpen(false)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="mobile-nav-drawer-body">
+                <Link
+                  href="/questions"
+                  className={`mobile-nav-item ${pathname === '/questions' ? 'active' : ''}`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Search size={18} />
+                  <span>Browse Questions</span>
+                </Link>
+
+                <Link
+                  href="/dashboard"
+                  className={`mobile-nav-item ${pathname.startsWith('/dashboard') ? 'active' : ''}`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <LayoutDashboard size={18} />
+                  <span>Dashboard</span>
+                </Link>
+
+                <Link
+                  href="/dashboard/bookmarks"
+                  className={`mobile-nav-item ${pathname === '/dashboard/bookmarks' ? 'active' : ''}`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Bookmark size={18} />
+                  <span>My Bookmarks</span>
+                </Link>
+
+                <div className="mobile-nav-auth-actions">
+                  <Link
+                    href="/login"
+                    className="btn btn-secondary"
+                    onClick={() => setMobileMenuOpen(false)}
+                    style={{ width: '100%', justifyContent: 'center' }}
+                  >
+                    <LogIn size={16} />
+                    <span>Login</span>
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="btn btn-primary"
+                    onClick={() => setMobileMenuOpen(false)}
+                    style={{ width: '100%', justifyContent: 'center' }}
+                  >
+                    <User size={16} />
+                    <span>Register</span>
+                  </Link>
+                </div>
+              </div>
             </div>
-          </div>
+          </>
         )}
       </div>
-
-      <style jsx>{`
-        @media (max-width: 768px) {
-          .mobile-toggle-btn {
-            display: flex !important;
-          }
-        }
-      `}</style>
     </header>
   );
 }
