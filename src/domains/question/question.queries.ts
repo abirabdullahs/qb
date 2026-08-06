@@ -59,38 +59,46 @@ export async function queryQuestions(params: QuestionQueryParams): Promise<Pagin
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-    const queryBuilder = db
-      .select()
-      .from(questions)
-      .where(whereClause)
-      .orderBy(desc(questions.id))
-      .limit(limit + 1);
+    if (process.env.DATABASE_URL) {
+      try {
+        const queryBuilder = db
+          .select()
+          .from(questions)
+          .where(whereClause)
+          .orderBy(desc(questions.id))
+          .limit(limit + 1);
 
-    if (!cursorNum) {
-      queryBuilder.offset((page - 1) * limit);
+        if (!cursorNum) {
+          queryBuilder.offset((page - 1) * limit);
+        }
+
+        const dbQuestions = await queryBuilder;
+        const hasMore = dbQuestions.length > limit;
+        const data = hasMore ? dbQuestions.slice(0, limit) : dbQuestions;
+        const nextCursor = hasMore ? (data[data.length - 1] as any).id : null;
+
+        const countRes = await db.select({ count: sql<number>`count(*)` }).from(questions).where(whereClause);
+        const total = Number(countRes[0]?.count || data.length);
+
+        return {
+          data: data as unknown as FullQuestion[],
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit) || 1,
+          nextCursor,
+          hasMore,
+        };
+      } catch (err) {
+        console.error('[queryQuestions] Database query failed:', err);
+        throw new Error('Database query failed. Please check connection and logs.');
+      }
     }
-
-    const dbQuestions = await queryBuilder;
-
-    if (dbQuestions && dbQuestions.length > 0) {
-      const hasMore = dbQuestions.length > limit;
-      const data = hasMore ? dbQuestions.slice(0, limit) : dbQuestions;
-      const nextCursor = hasMore ? (data[data.length - 1] as any).id : null;
-
-      const countRes = await db.select({ count: sql<number>`count(*)` }).from(questions).where(whereClause);
-      const total = Number(countRes[0]?.count || dbQuestions.length);
-
-      return {
-        data: data as unknown as FullQuestion[],
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-        nextCursor,
-        hasMore,
-      };
+  } catch (err) {
+    if (process.env.DATABASE_URL) {
+      throw err;
     }
-  } catch {}
+  }
 
   // Fallback to in-memory store
   let mock = getAllMockQuestions();
