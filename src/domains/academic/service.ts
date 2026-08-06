@@ -310,7 +310,7 @@ export async function resolveOrCreateTopic(chapterId: number, topicName: string,
 
   try {
     const existingTopics = await db.select().from(topics).where(eq(topics.chapterId, chapterId));
-    const matchedTopic = existingTopics.find((topic) => topic.name.toLowerCase() === trimmedName.toLowerCase());
+    const matchedTopic = existingTopics.find((topic: any) => topic.name.toLowerCase() === trimmedName.toLowerCase());
     if (matchedTopic) {
       return { ...matchedTopic, subTopics: [] };
     }
