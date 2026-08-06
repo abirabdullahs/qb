@@ -77,10 +77,29 @@ export default function QuestionForm({ initialData, onSubmit, isSubmitting = fal
 
   useEffect(() => {
     async function loadAcademic() {
-      const tree = await getCurriculumTree();
-      setSubjects(tree);
-      const bList = await getBoards();
-      setBoards(bList);
+      try {
+        const res = await fetch('/api/academic/tree');
+        if (res.ok) {
+          const json = await res.json();
+          if (json.data && Array.isArray(json.data)) {
+            setSubjects(json.data);
+          } else {
+            const tree = await getCurriculumTree();
+            setSubjects(tree);
+          }
+        } else {
+          const tree = await getCurriculumTree();
+          setSubjects(tree);
+        }
+      } catch {
+        const tree = await getCurriculumTree();
+        setSubjects(tree);
+      }
+
+      try {
+        const bList = await getBoards();
+        setBoards(bList);
+      } catch {}
     }
 
     async function loadAdmission() {

@@ -8,6 +8,7 @@ import { Layers, CheckCircle2, AlertCircle, FileCode, Upload, ArrowLeft, Info } 
 
 const SAMPLE_JSON_TEMPLATE = [
   {
+    "topicId": 1001,
     "questionType": "mcq",
     "questionText": "What is the acceleration due to gravity on Earth's surface?",
     "difficulty": "easy",
@@ -22,6 +23,7 @@ const SAMPLE_JSON_TEMPLATE = [
     "tags": ["Physics", "Gravity"]
   },
   {
+    "topicId": 1003,
     "questionType": "cq",
     "stimulusText": "একটি গাড়ি স্থির অবস্থান থেকে যাত্রা শুরু করে ২ মি/সে² সুষম তরণে ১০ সেকেন্ড চললো।",
     "questionText": "উদ্দীপকের আলোকে প্রশ্নগুলোর উত্তর দাও:",
@@ -61,12 +63,24 @@ export default function BulkUploadPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const tree = await getCurriculumTree();
+        const res = await fetch('/api/academic/tree');
+        let tree: SubjectItem[] = [];
+        if (res.ok) {
+          const json = await res.json();
+          tree = json.data || json || [];
+        }
+        if (!tree || tree.length === 0) {
+          tree = await getCurriculumTree();
+        }
+
         setSubjects(tree);
         if (tree.length > 0) {
           setSubjectId(tree[0].id);
           if (tree[0].chapters && tree[0].chapters.length > 0) {
             setChapterId(tree[0].chapters[0].id);
+            if (tree[0].chapters[0].topics && tree[0].chapters[0].topics.length > 0) {
+              setTopicId(tree[0].chapters[0].topics[0].id);
+            }
           }
         }
       } catch (err) {
@@ -176,11 +190,11 @@ export default function BulkUploadPage() {
     const enrichedQuestions = questionsArray.map((item: any) => ({
       ...item,
       branchType,
-      subjectId: Number(subjectId),
-      chapterId: branchType === 'academic' && chapterId ? Number(chapterId) : undefined,
-      topicId: branchType === 'academic' && topicId ? Number(topicId) : undefined,
-      admissionSegmentId: branchType === 'admission' && admissionSegmentId ? Number(admissionSegmentId) : undefined,
-      admissionExamId: branchType === 'admission' && admissionExamId ? Number(admissionExamId) : undefined,
+      subjectId: item.subjectId ? Number(item.subjectId) : Number(subjectId),
+      chapterId: branchType === 'academic' ? (item.chapterId ? Number(item.chapterId) : (chapterId ? Number(chapterId) : undefined)) : undefined,
+      topicId: branchType === 'academic' ? (item.topicId ? Number(item.topicId) : (topicId ? Number(topicId) : undefined)) : undefined,
+      admissionSegmentId: branchType === 'admission' ? (item.admissionSegmentId ? Number(item.admissionSegmentId) : (admissionSegmentId ? Number(admissionSegmentId) : undefined)) : undefined,
+      admissionExamId: branchType === 'admission' ? (item.admissionExamId ? Number(item.admissionExamId) : (admissionExamId ? Number(admissionExamId) : undefined)) : undefined,
     }));
 
     setUploading(true);
