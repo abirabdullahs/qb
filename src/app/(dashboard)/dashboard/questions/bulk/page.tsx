@@ -6,6 +6,13 @@ import type { SubjectItem } from '@/domains/academic/service';
 import type { AdmissionExam } from '@/domains/admission/service';
 import { Layers, CheckCircle2, AlertCircle, FileCode, Upload, ArrowLeft, Info } from 'lucide-react';
 
+interface Segment {
+  id: number;
+  name: string;
+  code: string;
+  segmentKind: 'academic' | 'admission';
+}
+
 const SAMPLE_JSON_TEMPLATE = [
   {
     "topicName": "ভৌত রাশি ও পরিমাপের ত্রুটি",
@@ -43,6 +50,8 @@ export default function BulkUploadPage() {
   const [branchType, setBranchType] = useState<'academic' | 'admission'>('academic');
   
   // Academic Domain State
+  const [segments, setSegments] = useState<Segment[]>([]);
+  const [segmentId, setSegmentId] = useState<number | ''>('');
   const [subjects, setSubjects] = useState<SubjectItem[]>([]);
   const [subjectId, setSubjectId] = useState<number | ''>('');
   const [chapterId, setChapterId] = useState<number | ''>('');
@@ -64,13 +73,17 @@ export default function BulkUploadPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const res = await fetch('/api/academic/tree');
-      let tree: SubjectItem[] = [];
-      if (res.ok) {
-        const json = await res.json();
-        tree = json.data || json || [];
-      }
-      setSubjects(tree);
+        const [treeRes, segRes] = await Promise.all([
+          fetch('/api/academic/tree'),
+          fetch('/api/academic/segments'),
+        ]);
+
+        let tree: SubjectItem[] = [];
+        if (treeRes.ok) {
+          const json = await treeRes.json();
+          tree = json.data || json || [];
+        }
+        setSubjects(tree);
         if (tree.length > 0) {
           setSubjectId(tree[0].id);
           if (tree[0].chapters && tree[0].chapters.length > 0) {
@@ -80,16 +93,21 @@ export default function BulkUploadPage() {
             }
           }
         }
+
+        if (segRes.ok) {
+          const json = await segRes.json();
+          const segList: Segment[] = json.data || json || [];
+          setSegments(segList);
+          const selectedSegment = segList.find((s) => s.segmentKind === branchType) || segList[0];
+          if (selectedSegment) {
+            setSegmentId(selectedSegment.id);
+          }
+        }
       } catch (err) {
-        console.error('Error loading taxonomy tree:', err);
+        console.error('Error loading taxonomy tree or segments:', err);
       }
 
       try {
-        const segRes = await fetch('/api/admission/segments');
-        if (segRes.ok) {
-          const json = await segRes.json();
-          setAdmissionSegments(json.data || json || []);
-        }
         const exRes = await fetch('/api/admission/exams');
         if (exRes.ok) {
           const json = await exRes.json();
@@ -103,6 +121,7 @@ export default function BulkUploadPage() {
     loadData();
   }, []);
 
+  const currentSegment = segments.find((s) => s.id === Number(segmentId));
   const currentSubject = subjects.find((s) => s.id === Number(subjectId));
   const currentChapter = currentSubject?.chapters?.find((c) => c.id === Number(chapterId));
   const currentTopic = currentChapter?.topics?.find((t) => t.id === Number(topicId));
@@ -118,6 +137,13 @@ export default function BulkUploadPage() {
       setTopicId('');
     }
   };
+
+  useEffect(() => {
+    const selectedSegment = segments.find((seg) => seg.segmentKind === branchType);
+    if (selectedSegment) {
+      setSegmentId(selectedSegment.id);
+    }
+  }, [branchType, segments]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -151,6 +177,11 @@ export default function BulkUploadPage() {
     setFileError(null);
 
     // Validate upfront selection
+    if (!segmentId) {
+      setFileError('Please select a Target Segment before uploading questions.');
+      return;
+    }
+
     if (!subjectId) {
       setFileError('Please select a Target Subject before uploading questions.');
       return;
@@ -218,6 +249,7 @@ export default function BulkUploadPage() {
       return {
         ...item,
         branchType,
+        segmentId: item.segmentId ? Number(item.segmentId) : Number(segmentId),
         subjectId: item.subjectId ? Number(item.subjectId) : Number(subjectId),
         chapterId: branchType === 'academic' ? (item.chapterId ? Number(item.chapterId) : (chapterId ? Number(chapterId) : undefined)) : undefined,
         topicId: branchType === 'academic' ? resolvedTopicId : undefined,
@@ -321,6 +353,24 @@ export default function BulkUploadPage() {
           </div>
 
           <div className="form-group">
+            <label className="form-label" style={{ fontWeight: 700 }}>Target Segment *</label>
+            <select
+              className="form-select"
+              value={segmentId}
+              onChange={(e) => setSegmentId(e.target.value ? Number(e.target.value) : '')}
+            >
+              <option value="">-- Select Segment --</option>
+              {segments
+                .filter((seg) => seg.segmentKind === branchType)
+                .map((seg) => (
+                  <option key={seg.id} value={seg.id}>
+                    {seg.name}
+                  </option>
+                ))}
+            </select>
+          </div>
+
+          <div className="form-group">
             <label className="form-label" style={{ fontWeight: 700 }}>Target Subject *</label>
             <select
               className="form-select"
@@ -405,6 +455,11 @@ export default function BulkUploadPage() {
             {currentChapter ? `➔ ${currentChapter.name}` : ''}{' '}
             {currentTopic ? `➔ (${currentTopic.name})` : ''}
           </div>
+        </div>
+
+        {/* Selected Segment Banner */}
+        <div style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: '8px', fontSize: '0.9rem', color: '#1E3A8A' }}>
+          <strong>Selected Segment:</strong> {currentSegment ? currentSegment.name : 'No segment selected'}
         </div>
       </div>
 
