@@ -59,6 +59,7 @@ export default function BulkUploadPage() {
   const [fileError, setFileError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [summary, setSummary] = useState<any | null>(null);
+  const [currentUserDebug, setCurrentUserDebug] = useState<any | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -236,6 +237,9 @@ export default function BulkUploadPage() {
 
       const data = await res.json();
       if (!res.ok || !data.success) {
+        if (res.status === 401) {
+          throw new Error(data.error || 'Unauthorized - Please sign in to perform bulk upload');
+        }
         throw new Error(data.error || 'Bulk upload failed');
       }
 
@@ -244,6 +248,16 @@ export default function BulkUploadPage() {
       setFileError(err.message || 'An error occurred during bulk upload');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const checkCurrentUser = async () => {
+    try {
+      const res = await fetch('/api/auth/me', { credentials: 'include' });
+      const data = await res.json();
+      setCurrentUserDebug({ status: res.status, body: data });
+    } catch (err: any) {
+      setCurrentUserDebug({ status: 'error', message: err.message });
     }
   };
 
@@ -267,8 +281,20 @@ export default function BulkUploadPage() {
         <div style={{ padding: '1rem', background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: '8px', color: '#991B1B', marginBottom: '1.5rem', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <AlertCircle size={18} />
           <div><strong>Error:</strong> {fileError}</div>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
+            <button onClick={checkCurrentUser} className="btn btn-outline" style={{ padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}>
+              Check Session
+            </button>
+          </div>
         </div>
       )}
+
+        {currentUserDebug && (
+          <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', fontSize: '0.85rem' }}>
+            <strong>Auth Debug:</strong>
+            <pre style={{ whiteSpace: 'pre-wrap', marginTop: '0.5rem' }}>{JSON.stringify(currentUserDebug, null, 2)}</pre>
+          </div>
+        )}
 
       {/* STEP 1: Upfront Subject & Chapter Selector */}
       <div className="card" style={{ marginBottom: '1.5rem', background: '#F8FAFC', border: '1px solid #CBD5E1' }}>
