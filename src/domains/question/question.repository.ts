@@ -132,35 +132,47 @@ export async function insertQuestionRecord(data: FullQuestion): Promise<FullQues
   };
 
   try {
-    // If incoming data lacks `segmentId`, infer from `branchType` (academic -> 1, admission -> 2),
+    // If incoming data lacks `segmentId`, resolve a matching segment by branchType,
     // otherwise try to pick a sensible default from the DB when configured.
     let segmentIdToUse = data.segmentId ?? null;
-    if (!segmentIdToUse && data.branchType) {
-      if (data.branchType === 'academic') segmentIdToUse = 1;
-      else if (data.branchType === 'admission') segmentIdToUse = 2;
-    }
     if (!segmentIdToUse && process.env.DATABASE_URL) {
       try {
-        const segs = await db.select().from(segments).limit(1);
-        if (segs && segs.length > 0) {
-          segmentIdToUse = segs[0].id;
+        let matchedSegment: any | null = null;
+        if (data.branchType === 'academic' || data.branchType === 'admission') {
+          const branchKind = data.branchType;
+          const rows = await db.select().from(segments).where(eq(segments.segmentKind, branchKind)).limit(1);
+          if (rows && rows.length > 0) {
+            matchedSegment = rows[0];
+          }
+        }
+
+        if (!matchedSegment) {
+          const segs = await db.select().from(segments).limit(1);
+          if (segs && segs.length > 0) {
+            matchedSegment = segs[0];
+          }
+        }
+
+        if (matchedSegment) {
+          segmentIdToUse = matchedSegment.id;
         } else {
-          // No segments exist yet — create a default segment using branchType
           const defaultName = data.branchType === 'admission' ? 'Admission' : 'Academic';
           const defaultCode = data.branchType === 'admission' ? 'admission' : 'academic';
+          const defaultKind = data.branchType === 'admission' ? 'admission' : 'academic';
           const insertedSeg = await db
             .insert(segments)
-            .values({ name: defaultName, code: defaultCode, segmentKind: 'curriculum' })
+            .values({ name: defaultName, code: defaultCode, segmentKind: defaultKind })
             .returning();
           if (insertedSeg && insertedSeg[0]) {
             segmentIdToUse = insertedSeg[0].id;
           }
         }
       } catch (err) {
+        console.error('[insertQuestionRecord] segment lookup failed:', err);
         // ignore - let DB handle missing segment or surface error later
       }
     }
-    // If DB is configured and we still have no segment id, fail early with a clear message
+
     if (!segmentIdToUse && process.env.DATABASE_URL) {
       throw new Error('No segmentId provided and no segment rows found in DB. Create a segment or provide segmentId in the payload.');
     }

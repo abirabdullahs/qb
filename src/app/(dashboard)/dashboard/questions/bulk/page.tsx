@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { SubjectItem, getCurriculumTree } from '@/domains/academic/service';
-import { getAdmissionExams, getAdmissionSegments, AdmissionExam } from '@/domains/admission/service';
+import type { SubjectItem } from '@/domains/academic/service';
+import type { AdmissionExam } from '@/domains/admission/service';
 import { Layers, CheckCircle2, AlertCircle, FileCode, Upload, ArrowLeft, Info } from 'lucide-react';
 
 const SAMPLE_JSON_TEMPLATE = [
@@ -65,16 +65,12 @@ export default function BulkUploadPage() {
     async function loadData() {
       try {
         const res = await fetch('/api/academic/tree');
-        let tree: SubjectItem[] = [];
-        if (res.ok) {
-          const json = await res.json();
-          tree = json.data || json || [];
-        }
-        if (!tree || tree.length === 0) {
-          tree = await getCurriculumTree();
-        }
-
-        setSubjects(tree);
+      let tree: SubjectItem[] = [];
+      if (res.ok) {
+        const json = await res.json();
+        tree = json.data || json || [];
+      }
+      setSubjects(tree);
         if (tree.length > 0) {
           setSubjectId(tree[0].id);
           if (tree[0].chapters && tree[0].chapters.length > 0) {
@@ -89,10 +85,16 @@ export default function BulkUploadPage() {
       }
 
       try {
-        const segs = await getAdmissionSegments();
-        setAdmissionSegments(segs);
-        const exs = await getAdmissionExams();
-        setAdmissionExams(exs);
+        const segRes = await fetch('/api/admission/segments');
+        if (segRes.ok) {
+          const json = await segRes.json();
+          setAdmissionSegments(json.data || json || []);
+        }
+        const exRes = await fetch('/api/admission/exams');
+        if (exRes.ok) {
+          const json = await exRes.json();
+          setAdmissionExams(json.data || json || []);
+        }
       } catch (err) {
         console.error('Error loading admission data:', err);
       }

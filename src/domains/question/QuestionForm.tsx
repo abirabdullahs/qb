@@ -9,8 +9,8 @@ import CQEditor from './CQEditor';
 import WrittenEditor from './WrittenEditor';
 import AttachmentManager, { AttachmentItem } from '../attachment/AttachmentManager';
 import TagInput from '../tag/TagInput';
-import { getCurriculumTree, SubjectItem, getBoards, getSegments } from '../academic/service';
-import { getAdmissionExams, getInstitutes, getAdmissionSegments, AdmissionExam } from '../admission/service';
+import type { SubjectItem } from '../academic/service';
+import type { AdmissionExam } from '../admission/service';
 
 interface QuestionFormProps {
   initialData?: any;
@@ -82,34 +82,58 @@ export default function QuestionForm({ initialData, onSubmit, isSubmitting = fal
         const res = await fetch('/api/academic/tree');
         if (res.ok) {
           const json = await res.json();
-          if (json.data && Array.isArray(json.data)) {
-            setSubjects(json.data);
-          } else {
-            const tree = await getCurriculumTree();
-            setSubjects(tree);
-          }
-        } else {
-          const tree = await getCurriculumTree();
-          setSubjects(tree);
+          setSubjects(json.data || json || []);
         }
-      } catch {
-        const tree = await getCurriculumTree();
-        setSubjects(tree);
+      } catch (err) {
+        console.error('Failed to load academic tree:', err);
+        setSubjects([]);
       }
 
       try {
-        const bList = await getBoards();
-        setBoards(bList);
-      } catch {}
+        const res = await fetch('/api/academic/boards');
+        if (res.ok) {
+          const json = await res.json();
+          setBoards(json.data || json || []);
+        }
+      } catch (err) {
+        console.error('Failed to load boards:', err);
+        setBoards([]);
+      }
     }
 
     async function loadAdmission() {
-      const segs = await getAdmissionSegments();
-      setAdmissionSegments(segs);
-      const exs = await getAdmissionExams();
-      setAdmissionExams(exs);
-      const insts = await getInstitutes();
-      setInstitutes(insts);
+      try {
+        const segRes = await fetch('/api/admission/segments');
+        if (segRes.ok) {
+          const json = await segRes.json();
+          setAdmissionSegments(json.data || json || []);
+        }
+      } catch (err) {
+        console.error('Failed to load admission segments:', err);
+        setAdmissionSegments([]);
+      }
+
+      try {
+        const exRes = await fetch('/api/admission/exams');
+        if (exRes.ok) {
+          const json = await exRes.json();
+          setAdmissionExams(json.data || json || []);
+        }
+      } catch (err) {
+        console.error('Failed to load admission exams:', err);
+        setAdmissionExams([]);
+      }
+
+      try {
+        const instRes = await fetch('/api/admission/institutes');
+        if (instRes.ok) {
+          const json = await instRes.json();
+          setInstitutes(json.data || json || []);
+        }
+      } catch (err) {
+        console.error('Failed to load institutes:', err);
+        setInstitutes([]);
+      }
     }
 
     loadAcademic();
