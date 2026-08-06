@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { renderLatexInText } from './math';
+// @ts-ignore: side-effect CSS import without type declarations
 import 'katex/dist/katex.min.css';
 
 interface LatexRendererProps {

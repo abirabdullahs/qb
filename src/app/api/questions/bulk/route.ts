@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { apiSuccess, apiError } from '@/lib/api-response';
 import { createQuestion, CreateQuestionPayload } from '@/domains/question/question.service';
 import { getAuthUserFromRequest } from '@/lib/auth';
+import { getCurriculumTree } from '@/domains/academic/service';
 
 export async function POST(req: NextRequest) {
   try {
@@ -29,6 +30,7 @@ export async function POST(req: NextRequest) {
       return apiError('Bulk upload limit exceeded. Maximum 200 questions per request.', 400);
     }
 
+    const curriculumTree = await getCurriculumTree();
     const results: Array<{ index: number; success: boolean; id?: number; isDuplicate?: boolean; error?: string }> = [];
     let createdCount = 0;
     let duplicateCount = 0;
@@ -37,10 +39,31 @@ export async function POST(req: NextRequest) {
     for (let i = 0; i < questionsList.length; i++) {
       const qPayload = questionsList[i];
       try {
-        const itemWithContributor = {
+        const itemWithContributor: CreateQuestionPayload & { contributorId: number; topicName?: string; topic?: string } = {
           ...qPayload,
           contributorId: user.id,
         };
+
+        if (itemWithContributor.branchType === 'academic') {
+          const topicName = typeof itemWithContributor.topicName === 'string'
+            ? itemWithContributor.topicName.trim()
+            : (typeof itemWithContributor.topic === 'string' ? itemWithContributor.topic.trim() : '');
+
+          if (topicName && !itemWithContributor.topicId) {
+            const subjectId = itemWithContributor.subjectId ? Number(itemWithContributor.subjectId) : undefined;
+            const chapterId = itemWithContributor.chapterId ? Number(itemWithContributor.chapterId) : undefined;
+            const selectedSubject = subjectId ? curriculumTree.find((subject) => subject.id === subjectId) : undefined;
+            const selectedChapterTopics = chapterId ? selectedSubject?.chapters?.find((chapter) => chapter.id === chapterId)?.topics || [] : [];
+            const matchedTopic = selectedChapterTopics.find((topic) => topic.name.toLowerCase() === topicName.toLowerCase());
+
+            if (matchedTopic) {
+              itemWithContributor.topicId = matchedTopic.id;
+            } else {
+              throw new Error(`Topic "${topicName}" was not found in the selected chapter.`);
+            }
+          }
+        }
+
         const { question, isDuplicate } = await createQuestion(itemWithContributor);
         if (isDuplicate) duplicateCount++;
         createdCount++;

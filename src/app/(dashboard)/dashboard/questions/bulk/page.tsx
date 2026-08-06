@@ -8,7 +8,7 @@ import { Layers, CheckCircle2, AlertCircle, FileCode, Upload, ArrowLeft, Info } 
 
 const SAMPLE_JSON_TEMPLATE = [
   {
-    "topicId": 1001,
+    "topicName": "ভৌত রাশি ও পরিমাপের ত্রুটি",
     "questionType": "mcq",
     "questionText": "What is the acceleration due to gravity on Earth's surface?",
     "difficulty": "easy",
@@ -23,7 +23,7 @@ const SAMPLE_JSON_TEMPLATE = [
     "tags": ["Physics", "Gravity"]
   },
   {
-    "topicId": 1003,
+    "topicName": "ভেক্টরের সামান্তরিক সূত্র",
     "questionType": "cq",
     "stimulusText": "একটি গাড়ি স্থির অবস্থান থেকে যাত্রা শুরু করে ২ মি/সে² সুষম তরণে ১০ সেকেন্ড চললো।",
     "questionText": "উদ্দীপকের আলোকে প্রশ্নগুলোর উত্তর দাও:",
@@ -187,15 +187,39 @@ export default function BulkUploadPage() {
     }
 
     // Automatically inject selected taxonomy fields into every question
-    const enrichedQuestions = questionsArray.map((item: any) => ({
-      ...item,
-      branchType,
-      subjectId: item.subjectId ? Number(item.subjectId) : Number(subjectId),
-      chapterId: branchType === 'academic' ? (item.chapterId ? Number(item.chapterId) : (chapterId ? Number(chapterId) : undefined)) : undefined,
-      topicId: branchType === 'academic' ? (item.topicId ? Number(item.topicId) : (topicId ? Number(topicId) : undefined)) : undefined,
-      admissionSegmentId: branchType === 'admission' ? (item.admissionSegmentId ? Number(item.admissionSegmentId) : (admissionSegmentId ? Number(admissionSegmentId) : undefined)) : undefined,
-      admissionExamId: branchType === 'admission' ? (item.admissionExamId ? Number(item.admissionExamId) : (admissionExamId ? Number(admissionExamId) : undefined)) : undefined,
-    }));
+    const enrichedQuestions = questionsArray.map((item: any) => {
+      const topicName = typeof item.topicName === 'string'
+        ? item.topicName.trim()
+        : (typeof item.topic === 'string' ? item.topic.trim() : '');
+
+      let resolvedTopicId: number | undefined;
+      if (branchType === 'academic') {
+        if (item.topicId) {
+          resolvedTopicId = Number(item.topicId);
+        } else if (topicName) {
+          const selectedChapterTopics = currentSubject?.chapters?.find((c) => c.id === Number(chapterId))?.topics || [];
+          const matchedTopic = selectedChapterTopics.find((t) => t.name.toLowerCase() === topicName.toLowerCase());
+
+          if (matchedTopic) {
+            resolvedTopicId = matchedTopic.id;
+          } else {
+            throw new Error(`Topic "${topicName}" was not found in the selected chapter. Please use a valid topic name or topic ID.`);
+          }
+        } else if (topicId) {
+          resolvedTopicId = Number(topicId);
+        }
+      }
+
+      return {
+        ...item,
+        branchType,
+        subjectId: item.subjectId ? Number(item.subjectId) : Number(subjectId),
+        chapterId: branchType === 'academic' ? (item.chapterId ? Number(item.chapterId) : (chapterId ? Number(chapterId) : undefined)) : undefined,
+        topicId: branchType === 'academic' ? resolvedTopicId : undefined,
+        admissionSegmentId: branchType === 'admission' ? (item.admissionSegmentId ? Number(item.admissionSegmentId) : (admissionSegmentId ? Number(admissionSegmentId) : undefined)) : undefined,
+        admissionExamId: branchType === 'admission' ? (item.admissionExamId ? Number(item.admissionExamId) : (admissionExamId ? Number(admissionExamId) : undefined)) : undefined,
+      };
+    });
 
     setUploading(true);
     setSummary(null);
@@ -232,7 +256,7 @@ export default function BulkUploadPage() {
           Bulk Question Upload (JSON Import)
         </h1>
         <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
-          Select the Subject and Chapter upfront. Questions in your JSON do not need subject or chapter IDs!
+          Select the Subject and Chapter upfront. Questions in your JSON do not need subject or chapter IDs; you can use a topic name or topic ID.
         </p>
       </div>
 
