@@ -28,6 +28,7 @@ export default function DashboardQuestionsPage() {
         const query = new URLSearchParams();
         if (filters.subjectId) query.set('subjectId', String(filters.subjectId));
         if (filters.chapterId) query.set('chapterId', String(filters.chapterId));
+        if (filters.topicId) query.set('topicId', String(filters.topicId));
         if (filters.questionType) query.set('questionType', filters.questionType);
         if (filters.difficulty) query.set('difficulty', filters.difficulty);
         if (filters.status) query.set('status', filters.status);

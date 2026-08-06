@@ -110,7 +110,7 @@ export async function queryQuestions(params: QuestionQueryParams): Promise<Pagin
     }
   }
 
-  // Fallback to in-memory store
+  // Fallback to in-memory store only if absolutely necessary
   let mock = getAllMockQuestions();
 
   if (params.segmentId) mock = mock.filter((q) => q.segmentId === params.segmentId);

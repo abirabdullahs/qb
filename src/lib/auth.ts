@@ -54,6 +54,8 @@ export function createSessionToken(user: AuthUser): string {
 }
 
 export function parseSessionToken(token: string): AuthUser | null {
+  if (!token) return null;
+
   try {
     const jsonStr = Buffer.from(token, 'base64').toString('utf-8');
     const data = JSON.parse(jsonStr);
@@ -64,10 +66,24 @@ export function parseSessionToken(token: string): AuthUser | null {
       id: data.id,
       name: data.name,
       email: data.email,
-      role: data.role,
+      role: data.role || 'student',
     };
   } catch {
-    return null;
+    try {
+      const decoded = decodeURIComponent(token);
+      const data = JSON.parse(decoded);
+      if (data.exp && data.exp < Date.now()) {
+        return null;
+      }
+      return {
+        id: data.id,
+        name: data.name,
+        email: data.email,
+        role: data.role || 'student',
+      };
+    } catch {
+      return null;
+    }
   }
 }
 

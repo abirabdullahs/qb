@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     const response = apiSuccess({ user, token }, 'Login successful');
     response.cookies.set('qb_session', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: false,
       sameSite: 'lax',
       path: '/',
       maxAge: 7 * 24 * 60 * 60,

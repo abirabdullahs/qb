@@ -78,6 +78,7 @@ export default function QuestionFilters({ filters, onFilterChange, subjects = []
             onFilterChange({
               subjectId: e.target.value ? Number(e.target.value) : undefined,
               chapterId: undefined,
+              topicId: undefined,
               page: 1,
             })
           }
@@ -98,7 +99,7 @@ export default function QuestionFilters({ filters, onFilterChange, subjects = []
           className="form-input"
           value={filters.chapterId || ''}
           disabled={!filters.subjectId}
-          onChange={(e) => onFilterChange({ chapterId: e.target.value ? Number(e.target.value) : undefined, page: 1 })}
+          onChange={(e) => onFilterChange({ chapterId: e.target.value ? Number(e.target.value) : undefined, topicId: undefined, page: 1 })}
         >
           <option value="">All Chapters</option>
           {chapters.map((chap) => (
@@ -106,6 +107,26 @@ export default function QuestionFilters({ filters, onFilterChange, subjects = []
               {chap.name}
             </option>
           ))}
+        </select>
+      </div>
+
+      {/* Topic Filter */}
+      <div>
+        <label className="form-label">Topic</label>
+        <select
+          className="form-input"
+          value={filters.topicId || ''}
+          disabled={!filters.chapterId}
+          onChange={(e) => onFilterChange({ topicId: e.target.value ? Number(e.target.value) : undefined, page: 1 })}
+        >
+          <option value="">All Topics</option>
+          {selectedSubject?.chapters
+            ?.find((chap) => chap.id === filters.chapterId)
+            ?.topics?.map((top) => (
+              <option key={top.id} value={top.id}>
+                {top.name}
+              </option>
+            ))}
         </select>
       </div>
 
@@ -156,7 +177,7 @@ export default function QuestionFilters({ filters, onFilterChange, subjects = []
           type="button"
           className="btn btn-secondary"
           style={{ width: '100%', padding: '0.45rem', fontSize: '0.85rem' }}
-          onClick={() => onFilterChange({ search: '', questionType: undefined, subjectId: undefined, chapterId: undefined, difficulty: undefined, tagId: undefined, status: undefined, page: 1 })}
+          onClick={() => onFilterChange({ search: '', questionType: undefined, subjectId: undefined, chapterId: undefined, topicId: undefined, difficulty: undefined, tagId: undefined, status: undefined, page: 1 })}
         >
           Reset Filters
         </button>
