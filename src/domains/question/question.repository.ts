@@ -1,5 +1,5 @@
 import { db } from '@/lib/db/client';
-import { questions, questionOptions, questionSubParts, questionBoards, questionTags, segments } from '@/lib/db/schema';
+import { questions, questionOptions, questionSubParts, questionBoards } from '@/lib/db/schema';
 import { eq, and, sql, desc } from 'drizzle-orm';
 
 export interface FullQuestion {
@@ -42,145 +42,59 @@ export interface FullQuestion {
   attachments?: any[];
 }
 
-// In-memory fallback data store for questions when DB is in dev/offline mode
-let mockQuestionsStore: FullQuestion[] = [
-  {
-    id: 1,
-    subjectId: 1,
-    chapterId: 102,
-    topicId: 1004,
-    questionType: 'mcq',
-    questionText: 'দুটি সমান ভেক্টরের লব্ধির মান তাদের যেকোনো একটির মানের সমান হলে ভেক্টরদ্বয়ের মধ্যবর্তী কোণ কত?',
-    hasMath: true,
-    difficulty: 'medium',
-    language: 'bn',
-    marks: 1,
-    status: 'approved',
-    explanationText: 'আমরা জানি, $R^2 = P^2 + Q^2 + 2PQ\\cos\\alpha$। শর্তমতে $P=Q=R$, সুতরাং $1 = 1 + 1 + 2\\cos\\alpha \\implies \\cos\\alpha = -1/2 \\implies \\alpha = 120^\\circ$।',
-    options: [
-      { id: 1, optionLabel: 'ক', optionText: '$60^\\circ$', isCorrect: false },
-      { id: 2, optionLabel: 'খ', optionText: '$90^\\circ$', isCorrect: false },
-      { id: 3, optionLabel: 'গ', optionText: '$120^\\circ$', isCorrect: true },
-      { id: 4, optionLabel: 'ঘ', optionText: '$180^\\circ$', isCorrect: false },
-    ],
-    boardIds: [1],
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 2,
-    subjectId: 2,
-    chapterId: 202,
-    topicId: 2002,
-    questionType: 'cq',
-    stimulusText: 'অ্যালুমিনিয়াম আয়নের ($Al^{3+}$) সর্ববহিঃস্থ স্তরের ইলেকট্রনসমূহের কোয়ান্টাম সংখ্যা পর্যবেক্ষণ করা হলো।',
-    questionText: 'কোয়ান্টাম সংখ্যা বিষয়ক সৃজনশীল প্রশ্ন:',
-    hasMath: true,
-    difficulty: 'hard',
-    language: 'bn',
-    marks: 10,
-    status: 'approved',
-    subParts: [
-      { id: 1, partLabel: 'ক', partText: 'আউফবাউ নীতিটি বিবৃত করো।', marks: 1, cognitiveLevel: 'knowledge', answerText: 'ইলেকট্রন প্রথমে সর্বনিম্ন শক্তির অরবিটালে প্রবেশ করে এবং পরে ক্রমান্বয়ে উচ্চ শক্তির অরবিটাল পূর্ণ করে।' },
-      { id: 2, partLabel: 'খ', partText: '$3f$ অরবিটাল সম্ভব নয় কেন? ব্যাখ্যা করো।', marks: 2, cognitiveLevel: 'comprehension', answerText: '$n=3$ হলে $l$ এর মান $0, 1, 2$ হতে পারে। $f$ অরবিটালের জন্য $l=3$ প্রয়োজন, যা অসম্ভব।' },
-      { id: 3, partLabel: 'গ', partText: 'উদ্দীপকের $Al^{3+}$ আয়নের শেষ ইলেকট্রনের চারটি কোয়ান্টাম সংখ্যার মান নির্ণয় করো।', marks: 3, cognitiveLevel: 'application' },
-      { id: 4, partLabel: 'ঘ', partText: 'পাউলির বর্জন নীতি উদ্দীপকের ইলেকট্রন বিন্যাসের ক্ষেত্রে কীভাবে প্রযোজ্য হয় বিশ্লেষণ করো।', marks: 4, cognitiveLevel: 'higher_ability' },
-    ],
-    createdAt: new Date().toISOString(),
-  },
-];
-
 export async function findQuestionById(id: number): Promise<FullQuestion | null> {
-  try {
-    const res = await db.select().from(questions).where(eq(questions.id, id));
-    if (res && res.length > 0) {
-      const q = res[0] as unknown as FullQuestion;
-      const opts = await db.select().from(questionOptions).where(eq(questionOptions.questionId, id));
-      const subs = await db.select().from(questionSubParts).where(eq(questionSubParts.questionId, id));
-      const boardsList = await db.select().from(questionBoards).where(eq(questionBoards.questionId, id));
-      return {
-        ...q,
-        options: opts,
-        subParts: subs,
-        boardIds: boardsList.map((b: any) => b.boardId),
-      };
-    }
-  } catch {}
+  // FIX: previously wrapped in try/catch{} that silently fell back to two
+  // hardcoded sample questions on any DB error — meaning a real DB outage
+  // looked identical to "question not found," and real questions could be
+  // masked by fake sample data. Errors now propagate to the caller (the
+  // API route), which returns a proper 500 instead of wrong/fake data.
+  const res = await db.select().from(questions).where(eq(questions.id, id));
+  if (!res || res.length === 0) return null;
 
-  const found = mockQuestionsStore.find((q) => q.id === id);
-  return found || null;
+  const q = res[0] as unknown as FullQuestion;
+  const [opts, subs, boardsList] = await Promise.all([
+    db.select().from(questionOptions).where(eq(questionOptions.questionId, id)),
+    db.select().from(questionSubParts).where(eq(questionSubParts.questionId, id)),
+    db.select().from(questionBoards).where(eq(questionBoards.questionId, id)),
+  ]);
+
+  return {
+    ...q,
+    options: opts,
+    subParts: subs,
+    boardIds: boardsList.map((b: any) => b.boardId),
+  };
 }
 
 export async function findQuestionByHash(hash: string): Promise<FullQuestion | null> {
-  try {
-    const res = await db.select().from(questions).where(eq(questions.duplicateHash, hash));
-    if (res && res.length > 0) {
-      return res[0] as unknown as FullQuestion;
-    }
-  } catch {}
-
-  const found = mockQuestionsStore.find((q) => q.duplicateHash === hash);
-  return found || null;
+  const res = await db.select().from(questions).where(eq(questions.duplicateHash, hash));
+  return (res && res.length > 0) ? (res[0] as unknown as FullQuestion) : null;
 }
 
 export async function insertQuestionRecord(data: FullQuestion): Promise<FullQuestion> {
-  const newId = Date.now();
-  const newQ: FullQuestion = {
-    ...data,
-    id: newId,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
+  // FIX: previously this function would silently guess a segmentId (1 or 2
+  // based on branchType), grab an arbitrary existing segment from the DB,
+  // or even INSERT a brand-new segment row with an invalid segmentKind
+  // ('curriculum' isn't a valid value — the schema expects 'academic' or
+  // 'admission') if none was provided. That corrupted data and hid a
+  // missing required field. segmentId must now be a real, valid value
+  // supplied by the caller (the form/service layer) — no guessing.
+  if (data.branchType === 'academic' && !data.segmentId) {
+    throw new Error(
+      'segmentId is required for academic-branch questions (e.g. SSC, HSC, Dakhil, Alim). ' +
+      'Select a segment in the question form before submitting.'
+    );
+  }
 
-  try {
-    // If incoming data lacks `segmentId`, resolve a matching segment by branchType,
-    // otherwise try to pick a sensible default from the DB when configured.
-    let segmentIdToUse = data.segmentId ?? null;
-    if (!segmentIdToUse && process.env.DATABASE_URL) {
-      try {
-        let matchedSegment: any | null = null;
-        if (data.branchType === 'academic' || data.branchType === 'admission') {
-          const branchKind = data.branchType;
-          const rows = await db.select().from(segments).where(eq(segments.segmentKind, branchKind)).limit(1);
-          if (rows && rows.length > 0) {
-            matchedSegment = rows[0];
-          }
-        }
-
-        if (!matchedSegment) {
-          const segs = await db.select().from(segments).limit(1);
-          if (segs && segs.length > 0) {
-            matchedSegment = segs[0];
-          }
-        }
-
-        if (matchedSegment) {
-          segmentIdToUse = matchedSegment.id;
-        } else {
-          const defaultName = data.branchType === 'admission' ? 'Admission' : 'Academic';
-          const defaultCode = data.branchType === 'admission' ? 'admission' : 'academic';
-          const defaultKind = data.branchType === 'admission' ? 'admission' : 'academic';
-          const insertedSeg = await db
-            .insert(segments)
-            .values({ name: defaultName, code: defaultCode, segmentKind: defaultKind })
-            .returning();
-          if (insertedSeg && insertedSeg[0]) {
-            segmentIdToUse = insertedSeg[0].id;
-          }
-        }
-      } catch (err) {
-        console.error('[insertQuestionRecord] segment lookup failed:', err);
-        // ignore - let DB handle missing segment or surface error later
-      }
-    }
-
-    if (!segmentIdToUse && process.env.DATABASE_URL) {
-      throw new Error('No segmentId provided and no segment rows found in DB. Create a segment or provide segmentId in the payload.');
-    }
-
-    const inserted = await db
+  // FIX: the whole multi-table write (question + options + sub-parts) now
+  // runs inside a single DB transaction. If any insert fails partway
+  // through, everything rolls back — previously a failed options insert
+  // could leave an orphaned question row with no answers.
+  return await db.transaction(async (tx) => {
+    const inserted = await tx
       .insert(questions)
       .values({
-        segmentId: segmentIdToUse || null,
+        segmentId: data.segmentId ?? null,
         groupId: data.groupId || null,
         admissionSegmentId: data.admissionSegmentId || null,
         admissionExamId: data.admissionExamId || null,
@@ -210,96 +124,83 @@ export async function insertQuestionRecord(data: FullQuestion): Promise<FullQues
       })
       .returning();
 
-    if (inserted && inserted[0]) {
-      const qId = inserted[0].id;
-      if (data.options && data.options.length > 0) {
-        await db.insert(questionOptions).values(
-          data.options.map((opt, idx) => ({
-            questionId: qId,
-            optionLabel: opt.optionLabel,
-            optionText: opt.optionText,
-            isCorrect: opt.isCorrect,
-            explanationText: opt.explanationText || null,
-            orderNo: idx + 1,
-          }))
-        );
-      }
-      if (data.subParts && data.subParts.length > 0) {
-        await db.insert(questionSubParts).values(
-          data.subParts.map((sp, idx) => ({
-            questionId: qId,
-            partLabel: sp.partLabel,
-            partText: sp.partText,
-            marks: String(sp.marks || 1),
-            cognitiveLevel: sp.cognitiveLevel || null,
-            answerText: sp.answerText || null,
-            explanationText: sp.explanationText || null,
-            orderNo: idx + 1,
-          }))
-        );
-      }
-      return { ...newQ, id: qId };
+    if (!inserted || !inserted[0]) {
+      throw new Error('Failed to insert question record — no row returned.');
     }
-  } catch (err) {
-    console.error('[insertQuestionRecord] Database insert failed:', err);
-    // If no real database configured, fall back to mock store for local/dev convenience
-    if (!process.env.DATABASE_URL) {
-      mockQuestionsStore.unshift(newQ);
-      return newQ;
-    }
-    // With a configured DATABASE_URL we should not silently succeed — propagate error
-    throw err;
-  }
 
-  // Fallback: if DB did not throw but didn't return inserted row, handle gracefully
-  if (!process.env.DATABASE_URL) {
-    mockQuestionsStore.unshift(newQ);
-    return newQ;
-  }
-  throw new Error('Failed to insert question record and no fallback available.');
+    const qId = inserted[0].id;
+
+    if (data.options && data.options.length > 0) {
+      await tx.insert(questionOptions).values(
+        data.options.map((opt, idx) => ({
+          questionId: qId,
+          optionLabel: opt.optionLabel,
+          optionText: opt.optionText,
+          isCorrect: opt.isCorrect,
+          explanationText: opt.explanationText || null,
+          orderNo: idx + 1,
+        }))
+      );
+    }
+
+    if (data.subParts && data.subParts.length > 0) {
+      await tx.insert(questionSubParts).values(
+        data.subParts.map((sp, idx) => ({
+          questionId: qId,
+          partLabel: sp.partLabel,
+          partText: sp.partText,
+          marks: String(sp.marks || 1),
+          cognitiveLevel: sp.cognitiveLevel || null,
+          answerText: sp.answerText || null,
+          explanationText: sp.explanationText || null,
+          orderNo: idx + 1,
+        }))
+      );
+    }
+
+    if (data.boardIds && data.boardIds.length > 0) {
+      await tx.insert(questionBoards).values(
+        data.boardIds.map((boardId) => ({ questionId: qId, boardId }))
+      );
+    }
+
+    return {
+      ...data,
+      id: qId,
+      createdAt: inserted[0].createdAt,
+      updatedAt: inserted[0].updatedAt,
+    };
+  });
 }
 
 export async function updateQuestionRecord(id: number, updates: Partial<FullQuestion>): Promise<FullQuestion | null> {
   const existing = await findQuestionById(id);
   if (!existing) return null;
 
-  const updated: FullQuestion = {
-    ...existing,
-    ...updates,
-    updatedAt: new Date().toISOString(),
-  };
+  // FIX: previously wrapped in try/catch{} — a failed UPDATE would be
+  // silently ignored and the function would still return "updated" data
+  // to the caller, even though nothing changed in the database. Errors
+  // now propagate so the API route can report the real failure.
+  await db
+    .update(questions)
+    .set({
+      questionText: updates.questionText ?? existing.questionText,
+      stimulusText: updates.stimulusText ?? existing.stimulusText,
+      explanationText: updates.explanationText ?? existing.explanationText,
+      answerText: updates.answerText ?? existing.answerText,
+      difficulty: updates.difficulty ?? existing.difficulty,
+      status: updates.status ?? existing.status,
+      reviewedBy: updates.reviewedBy ?? existing.reviewedBy,
+      updatedAt: new Date(),
+    })
+    .where(eq(questions.id, id));
 
-  try {
-    await db
-      .update(questions)
-      .set({
-        questionText: updates.questionText ?? existing.questionText,
-        stimulusText: updates.stimulusText ?? existing.stimulusText,
-        explanationText: updates.explanationText ?? existing.explanationText,
-        answerText: updates.answerText ?? existing.answerText,
-        difficulty: updates.difficulty ?? existing.difficulty,
-        status: updates.status ?? existing.status,
-        updatedAt: new Date(),
-      })
-      .where(eq(questions.id, id));
-  } catch {}
-
-  const idx = mockQuestionsStore.findIndex((q) => q.id === id);
-  if (idx !== -1) {
-    mockQuestionsStore[idx] = updated;
-  }
-  return updated;
+  return { ...existing, ...updates, updatedAt: new Date().toISOString() };
 }
 
 export async function deleteQuestionRecord(id: number): Promise<boolean> {
-  try {
-    await db.delete(questions).where(eq(questions.id, id));
-  } catch {}
-
-  mockQuestionsStore = mockQuestionsStore.filter((q) => q.id !== id);
-  return true;
-}
-
-export function getAllMockQuestions(): FullQuestion[] {
-  return mockQuestionsStore;
+  // FIX: same issue as update — a failed delete used to be swallowed and
+  // reported as success. Now it propagates.
+  const result = await db.delete(questions).where(eq(questions.id, id)).returning();
+  return result.length > 0;
 }

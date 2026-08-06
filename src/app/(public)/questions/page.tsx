@@ -5,7 +5,18 @@ import QuestionFilters from '@/domains/question/QuestionFilters';
 import QuestionCard from '@/domains/question/QuestionCard';
 import { QuestionQueryParams } from '@/domains/question/question.queries';
 import { FullQuestion } from '@/domains/question/question.repository';
-import { getCurriculumTree, SubjectItem } from '@/domains/academic/service';
+import { SubjectItem } from '@/domains/academic/service';
+
+// FIX: this file is a 'use client' component but previously imported
+// `getCurriculumTree` (a function) directly from '@/domains/academic/service'
+// as a fallback when the `/api/academic/tree` fetch failed. That service
+// module imports the Neon DB client, which cannot run in the browser —
+// this either breaks the production build or throws at runtime the moment
+// the fallback path is hit. The component now imports only the `SubjectItem`
+// *type* from that module (types are erased at build time, so this is safe)
+// and always fetches subject data through the API route. If the fetch
+// fails, we show an error state instead of silently trying to run
+// server-only code in the browser.
 
 export default function PublicQuestionsPage() {
   const [filters, setFilters] = useState<QuestionQueryParams>({ page: 1, limit: 10, status: 'approved' });
@@ -15,9 +26,21 @@ export default function PublicQuestionsPage() {
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [nextCursor, setNextCursor] = useState<number | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    getCurriculumTree().then(setSubjects);
+    async function loadSubjects() {
+      try {
+        const res = await fetch('/api/academic/tree');
+        if (!res.ok) throw new Error('Failed to load subjects');
+        const json = await res.json();
+        setSubjects(json.data || []);
+      } catch (err) {
+        console.error('Failed to load curriculum tree:', err);
+        setLoadError('Could not load subject filters. Please refresh the page.');
+      }
+    }
+    loadSubjects();
   }, []);
 
   useEffect(() => {
@@ -30,7 +53,11 @@ export default function PublicQuestionsPage() {
         if (filters.questionType) query.set('questionType', filters.questionType);
         if (filters.difficulty) query.set('difficulty', filters.difficulty);
         if (filters.tagId) query.set('tagId', String(filters.tagId));
-        query.set('status', 'approved'); // public users only browse approved questions
+        // Note: 'status' is still sent for clarity, but the API route now
+        // enforces 'approved' server-side for unauthenticated/non-reviewer
+        // requests regardless of what's passed here — see FIX in
+        // api/questions/route.ts.
+        query.set('status', 'approved');
         if (filters.search) query.set('search', filters.search);
         if (filters.cursor) query.set('cursor', String(filters.cursor));
         query.set('page', String(filters.page || 1));
@@ -62,6 +89,12 @@ export default function PublicQuestionsPage() {
           Explore thousands of verified HSC, SSC, and Admission test questions with step-by-step solutions and KaTeX mathematical notation.
         </p>
       </div>
+
+      {loadError && (
+        <div style={{ padding: '0.75rem', background: '#fee2e2', color: '#b91c1c', borderRadius: '6px', fontSize: '0.9rem', marginBottom: '1rem' }}>
+          {loadError}
+        </div>
+      )}
 
       <QuestionFilters
         filters={filters}

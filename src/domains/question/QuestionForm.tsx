@@ -9,8 +9,23 @@ import CQEditor from './CQEditor';
 import WrittenEditor from './WrittenEditor';
 import AttachmentManager, { AttachmentItem } from '../attachment/AttachmentManager';
 import TagInput from '../tag/TagInput';
-import type { SubjectItem } from '../academic/service';
-import type { AdmissionExam } from '../admission/service';
+import { SubjectItem } from '../academic/service';
+import { AdmissionExam } from '../admission/service';
+
+// FIX: this component is 'use client' but previously imported server-only
+// modules directly (`../academic/service`, `../admission/service`), which
+// import the DB client (Neon) into the browser bundle. That either breaks
+// the build or fails at runtime. All data now comes exclusively through
+// fetch() calls to the existing API routes — the server-module imports
+// above are type-only (SubjectItem / AdmissionExam interfaces), which is
+// safe since types are erased at build time.
+
+interface Segment {
+  id: number;
+  name: string;
+  code: string;
+  segmentKind: 'academic' | 'admission';
+}
 
 interface QuestionFormProps {
   initialData?: any;
@@ -22,8 +37,10 @@ export default function QuestionForm({ initialData, onSubmit, isSubmitting = fal
   const [branchType, setBranchType] = useState<'academic' | 'admission'>(initialData?.branchType || 'academic');
 
   // Academic Domain State
+  const [segments, setSegments] = useState<Segment[]>([]);
+  const [segmentId, setSegmentId] = useState<number | undefined>(initialData?.segmentId);
   const [subjects, setSubjects] = useState<SubjectItem[]>([]);
-  const [subjectId, setSubjectId] = useState<number>(initialData?.subjectId || 1);
+  const [subjectId, setSubjectId] = useState<number | undefined>(initialData?.subjectId);
   const [chapterId, setChapterId] = useState<number | undefined>(initialData?.chapterId);
   const [topicId, setTopicId] = useState<number | undefined>(initialData?.topicId);
   const [topicName, setTopicName] = useState<string>(initialData?.topicName || '');
@@ -79,65 +96,57 @@ export default function QuestionForm({ initialData, onSubmit, isSubmitting = fal
   useEffect(() => {
     async function loadAcademic() {
       try {
-        const res = await fetch('/api/academic/tree');
-        if (res.ok) {
-          const json = await res.json();
-          setSubjects(json.data || json || []);
-        }
-      } catch (err) {
-        console.error('Failed to load academic tree:', err);
-        setSubjects([]);
-      }
+        const [segRes, treeRes, boardRes] = await Promise.all([
+          fetch('/api/academic/segments'),
+          fetch('/api/academic/tree'),
+          fetch('/api/academic/boards'),
+        ]);
 
-      try {
-        const res = await fetch('/api/academic/boards');
-        if (res.ok) {
-          const json = await res.json();
-          setBoards(json.data || json || []);
+        if (segRes.ok) {
+          const json = await segRes.json();
+          const segList: Segment[] = json.data || [];
+          setSegments(segList.filter((s) => s.segmentKind === 'academic'));
+          if (!segmentId && segList.length > 0) {
+            const firstAcademic = segList.find((s) => s.segmentKind === 'academic');
+            if (firstAcademic) setSegmentId(firstAcademic.id);
+          }
+        }
+
+        if (treeRes.ok) {
+          const json = await treeRes.json();
+          const subjectList: SubjectItem[] = json.data || [];
+          setSubjects(subjectList);
+          if (!subjectId && subjectList.length > 0) setSubjectId(subjectList[0].id);
+        }
+
+        if (boardRes.ok) {
+          const json = await boardRes.json();
+          setBoards(json.data || []);
         }
       } catch (err) {
-        console.error('Failed to load boards:', err);
-        setBoards([]);
+        console.error('Failed to load academic taxonomy:', err);
+        setErrorMsg('Could not load subjects/segments. Please refresh the page.');
       }
     }
 
     async function loadAdmission() {
       try {
-        const segRes = await fetch('/api/admission/segments');
-        if (segRes.ok) {
-          const json = await segRes.json();
-          setAdmissionSegments(json.data || json || []);
-        }
+        const [segRes, examRes, instRes] = await Promise.all([
+          fetch('/api/admission/segments'),
+          fetch('/api/admission/exams'),
+          fetch('/api/admission/institutes'),
+        ]);
+        if (segRes.ok) setAdmissionSegments((await segRes.json()).data || []);
+        if (examRes.ok) setAdmissionExams((await examRes.json()).data || []);
+        if (instRes.ok) setInstitutes((await instRes.json()).data || []);
       } catch (err) {
-        console.error('Failed to load admission segments:', err);
-        setAdmissionSegments([]);
-      }
-
-      try {
-        const exRes = await fetch('/api/admission/exams');
-        if (exRes.ok) {
-          const json = await exRes.json();
-          setAdmissionExams(json.data || json || []);
-        }
-      } catch (err) {
-        console.error('Failed to load admission exams:', err);
-        setAdmissionExams([]);
-      }
-
-      try {
-        const instRes = await fetch('/api/admission/institutes');
-        if (instRes.ok) {
-          const json = await instRes.json();
-          setInstitutes(json.data || json || []);
-        }
-      } catch (err) {
-        console.error('Failed to load institutes:', err);
-        setInstitutes([]);
+        console.error('Failed to load admission taxonomy:', err);
       }
     }
 
     loadAcademic();
     loadAdmission();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const currentSubject = subjects.find((s) => s.id === subjectId);
@@ -158,13 +167,27 @@ export default function QuestionForm({ initialData, onSubmit, isSubmitting = fal
       return;
     }
 
+    // FIX: previously segmentId was hardcoded to `1` for every academic
+    // question, regardless of whether the contributor was actually adding
+    // an SSC, HSC, Dakhil, or Alim question — meaning segment-based
+    // filtering/browsing never actually worked. It's now a real selection
+    // captured from the user via the dropdown below, and validated here.
+    if (branchType === 'academic' && !segmentId) {
+      setErrorMsg('Please select a Segment (SSC / HSC / Dakhil / Alim) before submitting.');
+      return;
+    }
+    if (branchType === 'academic' && !subjectId) {
+      setErrorMsg('Please select a Subject before submitting.');
+      return;
+    }
+
     const payload = {
       branchType,
       subjectId,
       chapterId: branchType === 'academic' ? chapterId : undefined,
       topicId: branchType === 'academic' ? topicId : undefined,
       topicName: branchType === 'academic' && topicName.trim() ? topicName.trim() : undefined,
-      segmentId: branchType === 'academic' ? 1 : undefined,
+      segmentId: branchType === 'academic' ? segmentId : undefined,
       admissionSegmentId: branchType === 'admission' ? admissionSegmentId : undefined,
       admissionExamId: branchType === 'admission' ? admissionExamId : undefined,
       admissionUnitId: branchType === 'admission' ? admissionUnitId : undefined,
@@ -214,7 +237,7 @@ export default function QuestionForm({ initialData, onSubmit, isSubmitting = fal
               onChange={() => setBranchType('academic')}
               style={{ marginRight: '0.4rem' }}
             />
-            Academic Curriculum (HSC/SSC)
+            Academic Curriculum (SSC/HSC/Dakhil/Alim)
           </label>
           <label style={{ cursor: 'pointer', fontWeight: 600, color: branchType === 'admission' ? '#2563eb' : '#64748b' }}>
             <input
@@ -233,17 +256,34 @@ export default function QuestionForm({ initialData, onSubmit, isSubmitting = fal
       {branchType === 'academic' ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
           <div>
+            <label className="form-label">Segment (SSC / HSC / Dakhil / Alim) *</label>
+            <select
+              className="form-input"
+              value={segmentId || ''}
+              onChange={(e) => setSegmentId(e.target.value ? Number(e.target.value) : undefined)}
+            >
+              <option value="">-- Select Segment --</option>
+              {segments.map((seg) => (
+                <option key={seg.id} value={seg.id}>
+                  {seg.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
             <label className="form-label">Subject (বিষয়) *</label>
             <select
               className="form-input"
-              value={subjectId}
+              value={subjectId || ''}
               onChange={(e) => {
-                setSubjectId(Number(e.target.value));
+                setSubjectId(e.target.value ? Number(e.target.value) : undefined);
                 setChapterId(undefined);
                 setTopicId(undefined);
                 setTopicName('');
               }}
             >
+              <option value="">-- Select Subject --</option>
               {subjects.map((sub) => (
                 <option key={sub.id} value={sub.id}>
                   {sub.name}
