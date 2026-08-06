@@ -1,0 +1,6 @@
+{
+  "name": "Question Bank",
+  "description": "A smart question bank platform for academics and admissions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

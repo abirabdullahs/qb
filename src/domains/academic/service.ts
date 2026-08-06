@@ -1,0 +1,263 @@
+import { db } from '@/lib/db/client';
+import { subjects, chapters, topics, subTopics, boards, groups, segments } from '@/lib/db/schema';
+import { eq, asc } from 'drizzle-orm';
+
+export interface SubjectItem {
+  id: number;
+  name: string;
+  code?: string | null;
+  chapters?: ChapterItem[];
+}
+
+export interface ChapterItem {
+  id: number;
+  subjectId: number;
+  name: string;
+  orderNo?: number | null;
+  topics?: TopicItem[];
+}
+
+export interface TopicItem {
+  id: number;
+  chapterId: number;
+  name: string;
+  orderNo?: number | null;
+  subTopics?: SubTopicItem[];
+}
+
+export interface SubTopicItem {
+  id: number;
+  topicId: number;
+  name: string;
+  orderNo?: number | null;
+}
+
+let mockSubjects: SubjectItem[] = [
+  {
+    id: 1,
+    name: 'পদার্থবিজ্ঞান ১ম পত্র (Physics 1st Paper)',
+    code: 'PHY1',
+    chapters: [
+      {
+        id: 101,
+        subjectId: 1,
+        name: 'অধ্যায় ১: ভৌত জগৎ ও পরিমাপ',
+        orderNo: 1,
+        topics: [
+          { id: 1001, chapterId: 101, name: 'ভৌত রাশি ও পরিমাপের ত্রুটি', orderNo: 1 },
+          { id: 1002, chapterId: 101, name: 'মাত্রা ও পরিমাপের একক', orderNo: 2 },
+        ],
+      },
+      {
+        id: 102,
+        subjectId: 1,
+        name: 'অধ্যায় ২: ভেক্টর (Vector)',
+        orderNo: 2,
+        topics: [
+          { id: 1003, chapterId: 102, name: 'ভেক্টরের সামান্তরিক সূত্র', orderNo: 1 },
+          { id: 1004, chapterId: 102, name: 'ডট ও ক্রস গুণন (Dot & Cross Product)', orderNo: 2 },
+        ],
+      },
+      {
+        id: 103,
+        subjectId: 1,
+        name: 'অধ্যায় ৩: গতিবিদ্যা (Dynamics)',
+        orderNo: 3,
+        topics: [
+          { id: 1005, chapterId: 103, name: 'প্রাস (Projective Motion)', orderNo: 1 },
+          { id: 1006, chapterId: 103, name: 'কৌণিক গতিবিদ্যা', orderNo: 2 },
+        ],
+      },
+    ],
+  },
+  {
+    id: 2,
+    name: 'রসায়ন ১ম পত্র (Chemistry 1st Paper)',
+    code: 'CHEM1',
+    chapters: [
+      {
+        id: 201,
+        subjectId: 2,
+        name: 'অধ্যায় ১: গবেষণাগারের নিরাপদ ব্যবহার',
+        orderNo: 1,
+        topics: [{ id: 2001, chapterId: 201, name: 'গবেষণাগারের সুরক্ষা সরঞ্জাম', orderNo: 1 }],
+      },
+      {
+        id: 202,
+        subjectId: 2,
+        name: 'অধ্যায় ২: গুণগত রসায়ন (Qualitative Chemistry)',
+        orderNo: 2,
+        topics: [
+          { id: 2002, chapterId: 202, name: 'কোয়ান্টাম সংখ্যা (Quantum Numbers)', orderNo: 1 },
+          { id: 2003, chapterId: 202, name: 'দ্রাব্যতা ও দ্রাব্যতা গুণফল (Ksp & Kp)', orderNo: 2 },
+        ],
+      },
+    ],
+  },
+  {
+    id: 3,
+    name: 'উচ্চতর গণিত ১ম পত্র (Higher Math 1st Paper)',
+    code: 'MATH1',
+    chapters: [
+      {
+        id: 301,
+        subjectId: 3,
+        name: 'অধ্যায় ১: ম্যাট্রিক্স ও নির্ণায়ক (Matrix & Determinants)',
+        orderNo: 1,
+        topics: [{ id: 3001, chapterId: 301, name: 'ক্রেমারের নিয়ম (Cramer Rule)', orderNo: 1 }],
+      },
+      {
+        id: 302,
+        subjectId: 3,
+        name: 'অধ্যায় ৯: অন্তরীকরণ (Differentiation)',
+        orderNo: 9,
+        topics: [{ id: 3002, chapterId: 302, name: 'মূল নিয়মে অন্তরজ', orderNo: 1 }],
+      },
+    ],
+  },
+];
+
+let mockBoards = [
+  { id: 1, name: 'ঢাকা বোর্ড (Dhaka)', code: 'DHK' },
+  { id: 2, name: 'রাজশাহী বোর্ড (Rajshahi)', code: 'RAJ' },
+  { id: 3, name: 'কুমিল্লা বোর্ড (Comilla)', code: 'CUM' },
+  { id: 4, name: 'যশোর বোর্ড (Jessore)', code: 'JES' },
+  { id: 5, name: 'চট্টগ্রাম বোর্ড (Chittagong)', code: 'CHT' },
+  { id: 6, name: 'বরিশাল বোর্ড (Barisal)', code: 'BAR' },
+  { id: 7, name: 'সিলেট বোর্ড (Sylhet)', code: 'SYL' },
+  { id: 8, name: 'দিনাজপুর বোর্ড (Dinajpur)', code: 'DIN' },
+  { id: 9, name: 'ময়মনসিংহ বোর্ড (Mymensingh)', code: 'MYM' },
+  { id: 10, name: 'মাদ্রাসা বোর্ড (Madrasah)', code: 'MAD' },
+];
+
+let mockGroups = [
+  { id: 1, name: 'বিজ্ঞান (Science)', code: 'SCI' },
+  { id: 2, name: 'মানবিক (Humanities)', code: 'HUM' },
+  { id: 3, name: 'ব্যবসায় শিক্ষা (Business Studies)', code: 'BUS' },
+];
+
+let mockSegments = [
+  { id: 1, name: 'SSC Academic', code: 'SSC', segmentKind: 'academic' },
+  { id: 2, name: 'HSC Academic', code: 'HSC', segmentKind: 'academic' },
+  { id: 3, name: 'Admission Test', code: 'ADM', segmentKind: 'admission' },
+];
+
+export async function getCurriculumTree(): Promise<SubjectItem[]> {
+  try {
+    const dbSubjects = await db.select().from(subjects);
+    if (dbSubjects && dbSubjects.length > 0) {
+      const result: SubjectItem[] = [];
+      for (const s of dbSubjects) {
+        const dbChaps = await db.select().from(chapters).where(eq(chapters.subjectId, s.id)).orderBy(asc(chapters.orderNo));
+        const chapList: ChapterItem[] = [];
+        for (const c of dbChaps) {
+          const dbTops = await db.select().from(topics).where(eq(topics.chapterId, c.id)).orderBy(asc(topics.orderNo));
+          chapList.push({ ...c, topics: dbTops });
+        }
+        result.push({ ...s, chapters: chapList });
+      }
+      return result;
+    }
+  } catch {
+    // Fallback
+  }
+  return mockSubjects;
+}
+
+export async function getSubjects(): Promise<SubjectItem[]> {
+  try {
+    const res = await db.select().from(subjects);
+    if (res && res.length > 0) return res;
+  } catch {}
+  return mockSubjects.map(({ chapters, ...s }) => s);
+}
+
+export async function createSubject(name: string, code?: string): Promise<SubjectItem> {
+  const newSub: SubjectItem = {
+    id: Date.now(),
+    name,
+    code: code || name.substring(0, 5).toUpperCase(),
+    chapters: [],
+  };
+  try {
+    const inserted = await db.insert(subjects).values({ name, code: newSub.code }).returning();
+    if (inserted && inserted[0]) {
+      return { ...inserted[0], chapters: [] };
+    }
+  } catch {}
+  mockSubjects.push(newSub);
+  return newSub;
+}
+
+export async function createChapter(subjectId: number, name: string, orderNo = 0): Promise<ChapterItem> {
+  const newChap: ChapterItem = {
+    id: Date.now(),
+    subjectId,
+    name,
+    orderNo,
+    topics: [],
+  };
+  try {
+    const inserted = await db.insert(chapters).values({ subjectId, name, orderNo }).returning();
+    if (inserted && inserted[0]) {
+      return { ...inserted[0], topics: [] };
+    }
+  } catch {}
+
+  const parentSubject = mockSubjects.find((s) => s.id === subjectId);
+  if (parentSubject) {
+    if (!parentSubject.chapters) parentSubject.chapters = [];
+    parentSubject.chapters.push(newChap);
+  }
+  return newChap;
+}
+
+export async function createTopic(chapterId: number, name: string, orderNo = 0): Promise<TopicItem> {
+  const newTop: TopicItem = {
+    id: Date.now(),
+    chapterId,
+    name,
+    orderNo,
+    subTopics: [],
+  };
+  try {
+    const inserted = await db.insert(topics).values({ chapterId, name, orderNo }).returning();
+    if (inserted && inserted[0]) {
+      return { ...inserted[0], subTopics: [] };
+    }
+  } catch {}
+
+  for (const s of mockSubjects) {
+    const c = s.chapters?.find((chap) => chap.id === chapterId);
+    if (c) {
+      if (!c.topics) c.topics = [];
+      c.topics.push(newTop);
+      break;
+    }
+  }
+  return newTop;
+}
+
+export async function getBoards() {
+  try {
+    const res = await db.select().from(boards);
+    if (res && res.length > 0) return res;
+  } catch {}
+  return mockBoards;
+}
+
+export async function getGroups() {
+  try {
+    const res = await db.select().from(groups);
+    if (res && res.length > 0) return res;
+  } catch {}
+  return mockGroups;
+}
+
+export async function getSegments() {
+  try {
+    const res = await db.select().from(segments);
+    if (res && res.length > 0) return res;
+  } catch {}
+  return mockSegments;
+}
