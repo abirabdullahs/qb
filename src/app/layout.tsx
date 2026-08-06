@@ -2,6 +2,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import { AuthProvider } from '@/context/AuthContext';
 
 export const metadata: Metadata = {
   title: 'Smart Question Bank — Academic & Admission Platform',
@@ -12,9 +13,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        <Navbar />
-        <div style={{ flex: 1 }}>{children}</div>
-        <Footer />
+        <AuthProvider>
+          <Navbar />
+          <div style={{ flex: 1 }}>{children}</div>
+          <Footer />
+        </AuthProvider>
       </body>
     </html>
   );

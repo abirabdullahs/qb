@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'moderator' | 'teacher' | 'contributor';
+export type UserRole = 'admin' | 'moderator' | 'teacher' | 'contributor' | 'student';
 
 export interface AuthUser {
   id: number;
@@ -12,6 +12,7 @@ export const ROLES: Record<string, UserRole> = {
   MODERATOR: 'moderator',
   TEACHER: 'teacher',
   CONTRIBUTOR: 'contributor',
+  STUDENT: 'student',
 };
 
 // Permission Hierarchy & Helpers

@@ -17,26 +17,33 @@ import {
   Menu,
   X,
   ChevronRight,
+  Search,
 } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 
 export default function Sidebar() {
   const pathname = usePathname();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const { user } = useAuth();
 
-  const menuItems = [
-    { label: 'Overview', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'Questions', href: '/dashboard/questions', icon: FileText },
-    { label: 'Add Question', href: '/dashboard/questions/new', icon: PlusCircle },
-    { label: 'My Bookmarks', href: '/dashboard/bookmarks', icon: Bookmark },
-    { label: 'Review Queue', href: '/dashboard/review', icon: CheckCircle2 },
-    { label: 'Taxonomy', href: '/dashboard/taxonomy', icon: FolderTree },
-    { label: 'Staff Accounts', href: '/dashboard/users', icon: Users },
-    { label: 'Admission', href: '/dashboard/admission', icon: GraduationCap },
-    { label: 'Question Sets', href: '/dashboard/question-sets', icon: Layers },
-    { label: 'Settings', href: '/dashboard/settings', icon: Settings },
+  const userRole = user?.role || 'student';
+
+  const allMenuItems = [
+    { label: 'Overview', href: '/dashboard', icon: LayoutDashboard, roles: ['admin', 'moderator', 'teacher', 'contributor', 'student'] },
+    { label: 'Browse Questions', href: '/questions', icon: Search, roles: ['student'] },
+    { label: 'Questions', href: '/dashboard/questions', icon: FileText, roles: ['admin', 'moderator', 'teacher', 'contributor'] },
+    { label: 'Add Question', href: '/dashboard/questions/new', icon: PlusCircle, roles: ['admin', 'moderator', 'teacher', 'contributor'] },
+    { label: 'My Bookmarks', href: '/dashboard/bookmarks', icon: Bookmark, roles: ['admin', 'moderator', 'teacher', 'contributor', 'student'] },
+    { label: 'Review Queue', href: '/dashboard/review', icon: CheckCircle2, roles: ['admin', 'moderator'] },
+    { label: 'Taxonomy', href: '/dashboard/taxonomy', icon: FolderTree, roles: ['admin', 'moderator', 'teacher'] },
+    { label: 'Staff Accounts', href: '/dashboard/users', icon: Users, roles: ['admin'] },
+    { label: 'Admission', href: '/dashboard/admission', icon: GraduationCap, roles: ['admin', 'moderator'] },
+    { label: 'Question Sets', href: '/dashboard/question-sets', icon: Layers, roles: ['admin', 'moderator', 'teacher'] },
+    { label: 'Settings', href: '/dashboard/settings', icon: Settings, roles: ['admin'] },
   ];
 
-  const activeItem = menuItems.find((item) => item.href === pathname) || menuItems[0];
+  const menuItems = allMenuItems.filter((item) => item.roles.includes(userRole));
+  const activeItem = menuItems.find((item) => item.href === pathname) || menuItems[0] || allMenuItems[0];
 
   return (
     <>
