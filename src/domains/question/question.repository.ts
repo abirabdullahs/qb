@@ -1,5 +1,5 @@
 import { db } from '@/lib/db/client';
-import { questions, questionOptions, questionSubParts, questionBoards, questionTags } from '@/lib/db/schema';
+import { questions, questionOptions, questionSubParts, questionBoards, questionTags, segments } from '@/lib/db/schema';
 import { eq, and, sql, desc } from 'drizzle-orm';
 
 export interface FullQuestion {
@@ -132,10 +132,21 @@ export async function insertQuestionRecord(data: FullQuestion): Promise<FullQues
   };
 
   try {
+    // If DB is configured but incoming data lacks segmentId, try to pick a sensible default.
+    let segmentIdToUse = data.segmentId ?? null;
+    if (!segmentIdToUse && process.env.DATABASE_URL) {
+      try {
+        const segs = await db.select().from(segments).limit(1);
+        if (segs && segs.length > 0) segmentIdToUse = segs[0].id;
+      } catch (err) {
+        // ignore - let DB handle missing segment
+      }
+    }
+
     const inserted = await db
       .insert(questions)
       .values({
-        segmentId: data.segmentId || null,
+        segmentId: segmentIdToUse || null,
         groupId: data.groupId || null,
         admissionSegmentId: data.admissionSegmentId || null,
         admissionExamId: data.admissionExamId || null,
@@ -205,6 +216,13 @@ export async function insertQuestionRecord(data: FullQuestion): Promise<FullQues
     // With a configured DATABASE_URL we should not silently succeed — propagate error
     throw err;
   }
+
+  // Fallback: if DB did not throw but didn't return inserted row, handle gracefully
+  if (!process.env.DATABASE_URL) {
+    mockQuestionsStore.unshift(newQ);
+    return newQ;
+  }
+  throw new Error('Failed to insert question record and no fallback available.');
 }
 
 export async function updateQuestionRecord(id: number, updates: Partial<FullQuestion>): Promise<FullQuestion | null> {
