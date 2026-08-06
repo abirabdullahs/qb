@@ -22,9 +22,17 @@ export default function LoginPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      const data = await res.json();
+      
+      const rawText = await res.text();
+      let data: any = {};
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        throw new Error('Server returned an unexpected response. Please try again.');
+      }
+
       if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Invalid credentials');
+        throw new Error(data.error || 'Invalid email or password');
       }
       router.push('/dashboard');
     } catch (err: any) {

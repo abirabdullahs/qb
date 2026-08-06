@@ -75,6 +75,13 @@ export async function createQuestion(payload: CreateQuestionPayload): Promise<{ 
   return { question: created, isDuplicate };
 }
 
+import { queryQuestions, QuestionQueryParams } from './question.queries';
+
+export async function getQuestions(params: QuestionQueryParams = {}) {
+  const result = await queryQuestions(params);
+  return { questions: result.data, total: result.total };
+}
+
 export async function getQuestion(id: number): Promise<FullQuestion | null> {
   const q = await findQuestionById(id);
   if (q) {

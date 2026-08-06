@@ -4,6 +4,42 @@ import * as schema from "./schema";
 
 let db: any;
 
+function createMockDb() {
+  const createChainable = (): any => {
+    const fn = () => createChainable();
+    return new Proxy(fn, {
+      get: (_, prop) => {
+        if (prop === 'then') {
+          return (resolve: any) => resolve([]);
+        }
+        return createChainable();
+      },
+      apply: () => createChainable(),
+    });
+  };
+
+  const noOp = {
+    findMany: async () => [],
+    findFirst: async () => null,
+    findUnique: async () => null,
+    create: async (d: any) => d?.data ?? {},
+    update: async (d: any) => d?.data ?? {},
+    delete: async () => ({}),
+  };
+
+  return new Proxy(
+    {},
+    {
+      get: (_, prop) => {
+        if (prop === 'query') {
+          return new Proxy({}, { get: () => noOp });
+        }
+        return createChainable();
+      },
+    }
+  );
+}
+
 try {
   if (process.env.DATABASE_URL) {
     const sql = neon(process.env.DATABASE_URL);
@@ -13,23 +49,7 @@ try {
   }
 } catch {
   console.warn('[AI Studio] Database not connected — using mock client');
-  const noOp = {
-    findMany: async () => [],
-    findFirst: async () => null,
-    findUnique: async () => null,
-    create: async (d: any) => d?.data ?? {},
-    update: async (d: any) => d?.data ?? {},
-    delete: async () => ({}),
-  };
-  db = new Proxy(
-    {},
-    {
-      get: (_, prop) =>
-        prop === 'query'
-          ? new Proxy({}, { get: () => noOp })
-          : async () => [],
-    }
-  );
+  db = createMockDb();
 }
 
 export { db };

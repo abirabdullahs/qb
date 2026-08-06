@@ -72,6 +72,7 @@ export const topics = pgTable('topics', {
   id: serial('id').primaryKey(),
   chapterId: integer('chapter_id').notNull().references(() => chapters.id, { onDelete: 'cascade' }),
   name: varchar('name', { length: 200 }).notNull(),
+  concept: text('concept'),
   orderNo: integer('order_no').default(0),
 });
 
@@ -227,3 +228,10 @@ export const questionSetItems = pgTable('question_set_items', {
 }, (table) => [
   primaryKey({ columns: [table.setId, table.questionId] }),
 ]);
+
+export const bookmarks = pgTable('bookmarks', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  questionId: bigint('question_id', { mode: 'number' }).notNull().references(() => questions.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});

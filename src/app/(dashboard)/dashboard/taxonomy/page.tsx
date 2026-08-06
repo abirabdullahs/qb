@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { BookOpen, FolderPlus, Plus, ChevronRight, ChevronDown, Layers } from 'lucide-react';
+import { BookOpen, FolderPlus, Plus, ChevronRight, ChevronDown, Layers, Sparkles, Edit3, Check, X } from 'lucide-react';
+import LatexRenderer from '@/components/content/LatexRenderer';
 
 interface Topic {
   id: number;
   name: string;
+  concept?: string | null;
 }
 
 interface Chapter {
@@ -33,6 +35,11 @@ export default function TaxonomyPage() {
   const [newChapterName, setNewChapterName] = useState('');
   const [selectedChapterId, setSelectedChapterId] = useState<number | null>(null);
   const [newTopicName, setNewTopicName] = useState('');
+  const [newTopicConcept, setNewTopicConcept] = useState('');
+
+  // Editing existing concept
+  const [editingTopicId, setEditingTopicId] = useState<number | null>(null);
+  const [editingConceptText, setEditingConceptText] = useState('');
 
   const fetchTree = async () => {
     try {
@@ -104,11 +111,33 @@ export default function TaxonomyPage() {
       const res = await fetch('/api/academic/topics', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chapterId: selectedChapterId, name: newTopicName }),
+        body: JSON.stringify({
+          chapterId: selectedChapterId,
+          name: newTopicName,
+          concept: newTopicConcept,
+        }),
       });
       const data = await res.json();
       if (data.success) {
         setNewTopicName('');
+        setNewTopicConcept('');
+        fetchTree();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleSaveConcept = async (topicId: number) => {
+    try {
+      const res = await fetch('/api/academic/topics', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topicId, concept: editingConceptText }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setEditingTopicId(null);
         fetchTree();
       }
     } catch (err) {
@@ -127,41 +156,41 @@ export default function TaxonomyPage() {
   return (
     <div>
       <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#0f172a' }}>Academic Curriculum Taxonomy</h1>
-        <p style={{ fontSize: '0.875rem', color: '#64748b' }}>
-          Manage Subjects, Chapters, and Topics hierarchy for academic questions (SSC / HSC).
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--color-text-primary)' }}>Academic Curriculum Taxonomy</h1>
+        <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+          Manage Subjects, Chapters, Topics, and Core Academic Concepts with LaTeX Math Rendering.
         </p>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
         {/* Curriculum Tree View */}
         <div className="card" style={{ gridColumn: 'span 2' }}>
-          <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '1rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <BookOpen size={20} color="#2563eb" />
+          <h2 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--color-text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <BookOpen size={20} color="var(--color-primary)" />
             <span>Curriculum Hierarchy</span>
           </h2>
 
           {loading ? (
-            <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>Loading taxonomy tree...</div>
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>Loading taxonomy tree...</div>
           ) : tree.length === 0 ? (
-            <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>No subjects added yet.</div>
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-muted)' }}>No subjects added yet.</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {tree.map((subject) => {
                 const isSubExpanded = expandedSubjects[subject.id];
                 return (
-                  <div key={subject.id} style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+                  <div key={subject.id} style={{ border: '1px solid var(--color-border)', borderRadius: '10px', overflow: 'hidden' }}>
                     <div
                       onClick={() => toggleSubject(subject.id)}
                       style={{
                         padding: '0.75rem 1rem',
-                        background: '#f8fafc',
+                        background: 'var(--color-bg-subtle)',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        fontWeight: 600,
-                        color: '#0f172a',
+                        fontWeight: 700,
+                        color: 'var(--color-text-primary)',
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -169,20 +198,20 @@ export default function TaxonomyPage() {
                         <span>{subject.name}</span>
                         {subject.code && <span className="badge badge-primary" style={{ fontSize: '0.75rem' }}>{subject.code}</span>}
                       </div>
-                      <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
                         {subject.chapters?.length || 0} Chapters
                       </span>
                     </div>
 
                     {isSubExpanded && (
-                      <div style={{ padding: '0.75rem 1rem 0.75rem 2rem', background: '#ffffff', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <div style={{ padding: '0.75rem 1rem 0.75rem 2rem', background: '#ffffff', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                         {subject.chapters?.length === 0 ? (
-                          <div style={{ fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic' }}>No chapters added to this subject.</div>
+                          <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>No chapters added to this subject.</div>
                         ) : (
                           subject.chapters?.map((chapter) => {
                             const isChapExpanded = expandedChapters[chapter.id];
                             return (
-                              <div key={chapter.id} style={{ borderLeft: '2px solid #cbd5e1', paddingLeft: '0.75rem' }}>
+                              <div key={chapter.id} style={{ borderLeft: '2px solid var(--color-accent)', paddingLeft: '0.75rem' }}>
                                 <div
                                   onClick={() => toggleChapter(chapter.id)}
                                   style={{
@@ -191,8 +220,8 @@ export default function TaxonomyPage() {
                                     alignItems: 'center',
                                     justifyContent: 'space-between',
                                     fontSize: '0.9rem',
-                                    fontWeight: 600,
-                                    color: '#334155',
+                                    fontWeight: 700,
+                                    color: 'var(--color-text-primary)',
                                     padding: '0.25rem 0',
                                   }}
                                 >
@@ -200,20 +229,109 @@ export default function TaxonomyPage() {
                                     {isChapExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                                     <span>{chapter.name}</span>
                                   </div>
-                                  <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
                                     {chapter.topics?.length || 0} Topics
                                   </span>
                                 </div>
 
                                 {isChapExpanded && (
-                                  <div style={{ paddingLeft: '1.25rem', marginTop: '0.35rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                  <div style={{ paddingLeft: '1.25rem', marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                                     {chapter.topics?.length === 0 ? (
-                                      <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>No topics added.</div>
+                                      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>No topics added.</div>
                                     ) : (
                                       chapter.topics?.map((topic) => (
-                                        <div key={topic.id} style={{ fontSize: '0.85rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#2563eb' }} />
-                                          <span>{topic.name}</span>
+                                        <div
+                                          key={topic.id}
+                                          style={{
+                                            padding: '0.6rem 0.85rem',
+                                            borderRadius: '8px',
+                                            background: '#F8FAF7',
+                                            border: '1px solid var(--color-border)',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: '0.4rem',
+                                          }}
+                                        >
+                                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700, fontSize: '0.875rem', color: 'var(--color-text-primary)' }}>
+                                              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-primary)' }} />
+                                              <span>{topic.name}</span>
+                                            </div>
+
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                if (editingTopicId === topic.id) {
+                                                  setEditingTopicId(null);
+                                                } else {
+                                                  setEditingTopicId(topic.id);
+                                                  setEditingConceptText(topic.concept || '');
+                                                }
+                                              }}
+                                              style={{
+                                                background: 'none',
+                                                border: 'none',
+                                                color: 'var(--color-primary)',
+                                                cursor: 'pointer',
+                                                fontSize: '0.75rem',
+                                                fontWeight: 600,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.2rem',
+                                              }}
+                                            >
+                                              <Edit3 size={13} />
+                                              <span>{topic.concept ? 'Edit Concept' : '+ Add Concept'}</span>
+                                            </button>
+                                          </div>
+
+                                          {/* Concept display or editor */}
+                                          {editingTopicId === topic.id ? (
+                                            <div style={{ marginTop: '0.4rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                              <textarea
+                                                className="form-input"
+                                                rows={3}
+                                                placeholder="Enter topic concept (plain text or LaTeX like $E=mc^2$)"
+                                                value={editingConceptText}
+                                                onChange={(e) => setEditingConceptText(e.target.value)}
+                                                style={{ fontSize: '0.85rem' }}
+                                              />
+                                              {editingConceptText && (
+                                                <div style={{ padding: '0.5rem', background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '6px', fontSize: '0.85rem' }}>
+                                                  <div style={{ fontWeight: 700, fontSize: '0.75rem', color: '#15803D', marginBottom: '0.2rem' }}>LaTeX Live Preview:</div>
+                                                  <LatexRenderer content={editingConceptText} />
+                                                </div>
+                                              )}
+                                              <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => setEditingTopicId(null)}
+                                                  className="btn btn-secondary"
+                                                  style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
+                                                >
+                                                  <X size={14} /> Cancel
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => handleSaveConcept(topic.id)}
+                                                  className="btn btn-primary"
+                                                  style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem' }}
+                                                >
+                                                  <Check size={14} /> Save Concept
+                                                </button>
+                                              </div>
+                                            </div>
+                                          ) : (
+                                            topic.concept && (
+                                              <div style={{ padding: '0.5rem 0.75rem', background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '6px', fontSize: '0.825rem', color: '#166534' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: 700, fontSize: '0.75rem', color: '#15803D', marginBottom: '0.2rem' }}>
+                                                  <Sparkles size={12} />
+                                                  <span>Concept (মৌলিক ধারণা):</span>
+                                                </div>
+                                                <LatexRenderer content={topic.concept} />
+                                              </div>
+                                            )
+                                          )}
                                         </div>
                                       ))
                                     )}
@@ -236,8 +354,8 @@ export default function TaxonomyPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {/* Add Subject */}
           <div className="card">
-            <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.75rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <Plus size={16} color="#2563eb" />
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.75rem', color: 'var(--color-text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <Plus size={16} color="var(--color-primary)" />
               <span>Add Subject</span>
             </h3>
             <form onSubmit={handleAddSubject}>
@@ -259,8 +377,8 @@ export default function TaxonomyPage() {
 
           {/* Add Chapter */}
           <div className="card">
-            <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.75rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <FolderPlus size={16} color="#10b981" />
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.75rem', color: 'var(--color-text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <FolderPlus size={16} color="var(--color-primary)" />
               <span>Add Chapter</span>
             </h3>
             <form onSubmit={handleAddChapter}>
@@ -293,17 +411,17 @@ export default function TaxonomyPage() {
                 />
               </div>
 
-              <button type="submit" className="btn btn-primary" style={{ width: '100%', background: '#10b981' }}>
+              <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
                 Create Chapter
               </button>
             </form>
           </div>
 
-          {/* Add Topic */}
+          {/* Add Topic with Concept */}
           <div className="card">
-            <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.75rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <Layers size={16} color="#9333ea" />
-              <span>Add Topic</span>
+            <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.75rem', color: 'var(--color-text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <Layers size={16} color="var(--color-primary)" />
+              <span>Add Topic with Concept</span>
             </h3>
             <form onSubmit={handleAddTopic}>
               <div className="form-group">
@@ -337,7 +455,28 @@ export default function TaxonomyPage() {
                 />
               </div>
 
-              <button type="submit" className="btn btn-primary" style={{ width: '100%', background: '#9333ea' }}>
+              <div className="form-group">
+                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                  <Sparkles size={14} color="#15803D" />
+                  <span>Topic Concept (Plain Text & LaTeX)</span>
+                </label>
+                <textarea
+                  rows={3}
+                  className="form-input"
+                  placeholder="e.g. মূলদ্বয়ের নিশ্চায়ক $D = b^2 - 4ac$। $D > 0$ হলে মূলদ্বয় বাস্তব ও অসমান।"
+                  value={newTopicConcept}
+                  onChange={(e) => setNewTopicConcept(e.target.value)}
+                />
+              </div>
+
+              {newTopicConcept && (
+                <div style={{ marginBottom: '1rem', padding: '0.6rem', background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '6px', fontSize: '0.85rem' }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.75rem', color: '#15803D', marginBottom: '0.2rem' }}>Live LaTeX Preview:</div>
+                  <LatexRenderer content={newTopicConcept} />
+                </div>
+              )}
+
+              <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
                 Create Topic
               </button>
             </form>

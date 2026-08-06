@@ -77,3 +77,5 @@ export function getAuthUserFromRequest(req: Request): AuthUser | null {
   if (!token) return null;
   return parseSessionToken(token);
 }
+
+export const getCurrentUser = getAuthUserFromRequest;

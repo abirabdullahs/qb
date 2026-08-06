@@ -4,7 +4,7 @@ import { registerUser } from '@/domains/auth/service';
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, email, password } = await req.json();
+    const { name, email, password, role } = await req.json();
 
     if (!name || !email || !password) {
       return apiError('Name, email, and password are required', 400);
@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
       return apiError('Password must be at least 6 characters', 400);
     }
 
-    const { user, token } = await registerUser(name, email, password);
+    const { user, token } = await registerUser(name, email, password, role);
 
     const response = apiSuccess({ user, token }, 'Registration successful', 201);
     response.cookies.set('qb_session', token, {

@@ -11,6 +11,8 @@ import {
   Layers,
   Settings,
   PlusCircle,
+  Bookmark,
+  Users,
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -20,8 +22,10 @@ export default function Sidebar() {
     { label: 'Overview', href: '/dashboard', icon: LayoutDashboard },
     { label: 'Questions', href: '/dashboard/questions', icon: FileText },
     { label: 'Add Question', href: '/dashboard/questions/new', icon: PlusCircle },
+    { label: 'My Bookmarks', href: '/dashboard/bookmarks', icon: Bookmark },
     { label: 'Review Queue', href: '/dashboard/review', icon: CheckCircle2 },
     { label: 'Taxonomy', href: '/dashboard/taxonomy', icon: FolderTree },
+    { label: 'Staff Accounts', href: '/dashboard/users', icon: Users },
     { label: 'Admission', href: '/dashboard/admission', icon: GraduationCap },
     { label: 'Question Sets', href: '/dashboard/question-sets', icon: Layers },
     { label: 'Settings', href: '/dashboard/settings', icon: Settings },

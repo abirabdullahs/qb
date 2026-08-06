@@ -24,7 +24,15 @@ export default function RegisterPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, role, password }),
       });
-      const data = await res.json();
+      
+      const rawText = await res.text();
+      let data: any = {};
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        throw new Error('Server returned an unexpected response. Please try again.');
+      }
+
       if (!res.ok || !data.success) {
         throw new Error(data.error || 'Registration failed');
       }

@@ -15,7 +15,13 @@ export const createChapterSchema = z.object({
 export const createTopicSchema = z.object({
   chapterId: z.number({ required_error: 'Chapter is required' }),
   name: z.string().min(2, 'Topic name must be at least 2 characters'),
+  concept: z.string().optional(),
   orderNo: z.number().optional().default(0),
+});
+
+export const updateTopicConceptSchema = z.object({
+  topicId: z.number({ required_error: 'Topic ID is required' }),
+  concept: z.string({ required_error: 'Concept text is required' }),
 });
 
 export const createSubTopicSchema = z.object({

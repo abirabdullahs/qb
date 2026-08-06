@@ -1,18 +1,34 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { FullQuestion } from './question.repository';
 import QuestionRenderer from './QuestionRenderer';
 import Link from 'next/link';
+import { Bookmark, Sparkles, BookOpen } from 'lucide-react';
+import LatexRenderer from '../content/LatexRenderer';
 
 interface QuestionCardProps {
   question: FullQuestion;
   onStatusChange?: (id: number, status: 'approved' | 'rejected' | 'pending') => void;
   onDelete?: (id: number) => void;
   isAdminOrMod?: boolean;
+  initialBookmarked?: boolean;
+  onBookmarkToggle?: (questionId: number, isBookmarked: boolean) => void;
 }
 
-export default function QuestionCard({ question, onStatusChange, onDelete, isAdminOrMod = false }: QuestionCardProps) {
+export default function QuestionCard({
+  question,
+  onStatusChange,
+  onDelete,
+  isAdminOrMod = false,
+  initialBookmarked = false,
+  onBookmarkToggle,
+}: QuestionCardProps) {
+  const [isBookmarked, setIsBookmarked] = useState(initialBookmarked);
+  const [isBookmarking, setIsBookmarking] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [showConcept, setShowConcept] = useState(false);
+
   const statusColors = {
     approved: { bg: '#ECFDF5', text: '#166534', border: '#A7F3D0' },
     pending: { bg: '#FFFBEB', text: '#92400E', border: '#FDE68A' },
@@ -29,6 +45,41 @@ export default function QuestionCard({ question, onStatusChange, onDelete, isAdm
   const st = statusColors[question.status || 'pending'] || statusColors.pending;
   const diff = difficultyColors[question.difficulty || 'medium'] || difficultyColors.medium;
 
+  const handleBookmarkClick = async () => {
+    setIsBookmarking(true);
+    try {
+      const res = await fetch('/api/bookmarks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questionId: question.id }),
+      });
+
+      if (res.status === 401) {
+        setShowLoginPrompt(true);
+        setIsBookmarking(false);
+        return;
+      }
+
+      const data = await res.json();
+      if (data.success) {
+        const nextState = data.data.isBookmarked;
+        setIsBookmarked(nextState);
+        if (onBookmarkToggle) {
+          onBookmarkToggle(question.id, nextState);
+        }
+      } else {
+        setShowLoginPrompt(true);
+      }
+    } catch {
+      setShowLoginPrompt(true);
+    } finally {
+      setIsBookmarking(false);
+    }
+  };
+
+  // Check if topic concept exists
+  const topicConcept = (question as any).topicConcept || (question as any).concept;
+
   return (
     <div
       className="card"
@@ -36,6 +87,7 @@ export default function QuestionCard({ question, onStatusChange, onDelete, isAdm
         display: 'flex',
         flexDirection: 'column',
         gap: '1rem',
+        position: 'relative',
       }}
     >
       {/* Top Header & Badges */}
@@ -99,6 +151,29 @@ export default function QuestionCard({ question, onStatusChange, onDelete, isAdm
             </span>
           )}
 
+          {topicConcept && (
+            <button
+              type="button"
+              onClick={() => setShowConcept(!showConcept)}
+              style={{
+                padding: '0.25rem 0.625rem',
+                borderRadius: '6px',
+                fontWeight: 600,
+                fontSize: '0.75rem',
+                background: '#F0FDF4',
+                color: '#15803D',
+                border: '1px solid #BBF7D0',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.25rem',
+              }}
+            >
+              <Sparkles size={12} />
+              <span>{showConcept ? 'Hide Concept' : 'View Concept'}</span>
+            </button>
+          )}
+
           {(question as any).tags && (question as any).tags.length > 0 && (
             <div style={{ display: 'inline-flex', gap: '0.25rem', flexWrap: 'wrap' }}>
               {(question as any).tags.map((t: string, idx: number) => (
@@ -121,10 +196,56 @@ export default function QuestionCard({ question, onStatusChange, onDelete, isAdm
           )}
         </div>
 
-        <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-          ID: #{question.id} | Marks: {question.marks}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+            ID: #{question.id} | Marks: {question.marks}
+          </div>
+
+          <button
+            type="button"
+            onClick={handleBookmarkClick}
+            disabled={isBookmarking}
+            title={isBookmarked ? 'Remove Bookmark' : 'Bookmark Question'}
+            style={{
+              background: isBookmarked ? '#FEF3C7' : 'var(--color-bg-subtle)',
+              border: isBookmarked ? '1px solid #FCD34D' : '1px solid var(--color-border)',
+              borderRadius: '8px',
+              padding: '0.35rem 0.6rem',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              color: isBookmarked ? '#D97706' : 'var(--color-text-muted)',
+              transition: 'all 0.2s',
+            }}
+          >
+            <Bookmark size={15} fill={isBookmarked ? '#D97706' : 'none'} />
+            <span>{isBookmarked ? 'Saved' : 'Bookmark'}</span>
+          </button>
         </div>
       </div>
+
+      {/* Topic Concept Section with LaTeX Rendering */}
+      {showConcept && topicConcept && (
+        <div
+          style={{
+            padding: '0.85rem 1rem',
+            background: '#F0FDF4',
+            border: '1px solid #BBF7D0',
+            borderRadius: '8px',
+            fontSize: '0.9rem',
+            color: '#166534',
+          }}
+        >
+          <div style={{ fontWeight: 700, marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#15803D' }}>
+            <BookOpen size={16} />
+            <span>Topic Core Concept (মৌলিক ধারণা):</span>
+          </div>
+          <LatexRenderer content={topicConcept} />
+        </div>
+      )}
 
       {/* Main Question Content */}
       <QuestionRenderer question={question} />
@@ -174,6 +295,60 @@ export default function QuestionCard({ question, onStatusChange, onDelete, isAdm
           )}
         </div>
       </div>
+
+      {/* Login Prompt Modal for Unauthenticated Bookmarking */}
+      {showLoginPrompt && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '1rem',
+          }}
+          onClick={() => setShowLoginPrompt(false)}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '12px',
+              padding: '1.5rem',
+              maxWidth: '400px',
+              width: '100%',
+              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#FEF3C7', color: '#D97706', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Bookmark size={20} />
+              </div>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>Registration Required</h3>
+            </div>
+            <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginBottom: '1.25rem', lineHeight: 1.5 }}>
+              Browsing questions is free for everyone, but saving bookmarks for revision requires a user account.
+            </p>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setShowLoginPrompt(false)}
+              >
+                Cancel
+              </button>
+              <Link href="/login" className="btn btn-secondary">
+                Sign In
+              </Link>
+              <Link href="/register" className="btn btn-primary">
+                Register
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
