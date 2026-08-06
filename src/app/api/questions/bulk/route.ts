@@ -2,17 +2,12 @@ import { NextRequest } from 'next/server';
 import { apiSuccess, apiError } from '@/lib/api-response';
 import { createQuestion, CreateQuestionPayload } from '@/domains/question/question.service';
 import { getAuthUserFromRequest } from '@/lib/auth';
-import { isMockDb } from '@/lib/db/client';
 
 export async function POST(req: NextRequest) {
   try {
     const user = getAuthUserFromRequest(req);
     if (!user) {
       return apiError('Unauthorized - Please sign in to perform bulk upload', 401);
-    }
-
-    if (isMockDb) {
-      return apiError('Database not connected. Bulk upload is disabled in mock mode.', 503);
     }
 
     const body = await req.json();
