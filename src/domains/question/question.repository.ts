@@ -107,12 +107,14 @@ export async function insertQuestionRecord(data: FullQuestion): Promise<FullQues
   }
   const resolvedSegmentId: number = data.segmentId;
 
-  // FIX: the whole multi-table write (question + options + sub-parts) now
-  // runs inside a single DB transaction. If any insert fails partway
-  // through, everything rolls back — previously a failed options insert
-  // could leave an orphaned question row with no answers.
-  return await db.transaction(async (tx) => {
-    const inserted = await tx
+  // FIX: the HTTP-based Neon driver used by Vercel serverless functions
+  // does not support Drizzle transactions. The create flow therefore uses
+  // sequential inserts with rollback on failure so a partial insert does not
+  // leave a broken question row behind.
+  let createdQuestionId: number | undefined;
+
+  try {
+    const inserted = await db
       .insert(questions)
       .values({
         segmentId: resolvedSegmentId,
@@ -149,12 +151,18 @@ export async function insertQuestionRecord(data: FullQuestion): Promise<FullQues
       throw new Error('Failed to insert question record — no row returned.');
     }
 
-    const qId = inserted[0].id;
+    createdQuestionId = inserted[0].id;
+
+    if (createdQuestionId == null) {
+      throw new Error('Failed to resolve the created question id.');
+    }
+
+    const questionId = createdQuestionId as number;
 
     if (data.options && data.options.length > 0) {
-      await tx.insert(questionOptions).values(
+      await db.insert(questionOptions).values(
         data.options.map((opt, idx) => ({
-          questionId: qId,
+          questionId,
           optionLabel: opt.optionLabel,
           optionText: opt.optionText,
           isCorrect: opt.isCorrect,
@@ -165,9 +173,9 @@ export async function insertQuestionRecord(data: FullQuestion): Promise<FullQues
     }
 
     if (data.subParts && data.subParts.length > 0) {
-      await tx.insert(questionSubParts).values(
+      await db.insert(questionSubParts).values(
         data.subParts.map((sp, idx) => ({
-          questionId: qId,
+          questionId,
           partLabel: sp.partLabel,
           partText: sp.partText,
           marks: String(sp.marks || 1),
@@ -180,18 +188,23 @@ export async function insertQuestionRecord(data: FullQuestion): Promise<FullQues
     }
 
     if (data.boardIds && data.boardIds.length > 0) {
-      await tx.insert(questionBoards).values(
-        data.boardIds.map((boardId) => ({ questionId: qId, boardId }))
+      await db.insert(questionBoards).values(
+        data.boardIds.map((boardId) => ({ questionId, boardId }))
       );
     }
 
     return {
       ...data,
-      id: qId,
+      id: questionId,
       createdAt: inserted[0].createdAt,
       updatedAt: inserted[0].updatedAt,
     };
-  });
+  } catch (error) {
+    if (createdQuestionId != null) {
+      await db.delete(questions).where(eq(questions.id, createdQuestionId));
+    }
+    throw error;
+  }
 }
 
 export async function updateQuestionRecord(id: number, updates: Partial<FullQuestion>): Promise<FullQuestion | null> {
