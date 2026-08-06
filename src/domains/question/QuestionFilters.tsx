@@ -35,22 +35,19 @@ export default function QuestionFilters({ filters, onFilterChange, subjects = []
 
   return (
     <div
+      className="card"
       style={{
-        background: '#ffffff',
-        padding: '1rem',
-        borderRadius: '8px',
-        border: '1px solid #e2e8f0',
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-        gap: '0.75rem',
-        marginBottom: '1.25rem',
+        gap: '0.875rem',
+        marginBottom: '1.5rem',
       }}
     >
       {/* Search Bar Component */}
       <div style={{ gridColumn: '1 / -1' }}>
         <SearchBar
           value={filters.search || ''}
-          placeholder="Search question text, topics, or keywords..."
+          placeholder="Search question text, topics, explanation, or keywords..."
           onChange={(val) => onFilterChange({ search: val, page: 1 })}
           onClear={() => onFilterChange({ search: '', page: 1 })}
         />
@@ -122,7 +119,7 @@ export default function QuestionFilters({ filters, onFilterChange, subjects = []
         >
           <option value="">All Difficulties</option>
           <option value="easy">Easy (সহজ)</option>
-          <option value="medium">Medium (मध्यम)</option>
+          <option value="medium">Medium (মধ্যম)</option>
           <option value="hard">Hard (কঠিন)</option>
         </select>
       </div>

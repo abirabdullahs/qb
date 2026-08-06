@@ -21,16 +21,16 @@ export default function Sidebar() {
     { label: 'Questions', href: '/dashboard/questions', icon: FileText },
     { label: 'Add Question', href: '/dashboard/questions/new', icon: PlusCircle },
     { label: 'Review Queue', href: '/dashboard/review', icon: CheckCircle2 },
-    { label: 'Taxonomy (Curriculum)', href: '/dashboard/taxonomy', icon: FolderTree },
-    { label: 'Admissions & Exams', href: '/dashboard/admission', icon: GraduationCap },
+    { label: 'Taxonomy', href: '/dashboard/taxonomy', icon: FolderTree },
+    { label: 'Admission', href: '/dashboard/admission', icon: GraduationCap },
     { label: 'Question Sets', href: '/dashboard/question-sets', icon: Layers },
     { label: 'Settings', href: '/dashboard/settings', icon: Settings },
   ];
 
   return (
     <aside className="sidebar">
-      <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#94a3b8', paddingLeft: '0.5rem', letterSpacing: '0.05em' }}>
-        Dashboard Navigation
+      <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-muted)', paddingLeft: '0.5rem', letterSpacing: '0.05em' }}>
+        Dashboard Menu
       </div>
       <ul className="sidebar-menu">
         {menuItems.map((item) => {

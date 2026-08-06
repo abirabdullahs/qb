@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
 import QuestionFilters from '@/domains/question/QuestionFilters';
 import QuestionCard from '@/domains/question/QuestionCard';
 import { QuestionQueryParams } from '@/domains/question/question.queries';
@@ -56,10 +55,10 @@ export default function PublicQuestionsPage() {
   return (
     <div style={{ padding: '2rem 1rem', maxWidth: '1100px', margin: '0 auto' }}>
       <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2.25rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem' }}>
+        <h1 style={{ fontSize: '2.25rem', fontWeight: 800, color: 'var(--color-text-primary)', marginBottom: '0.5rem', letterSpacing: '-0.02em' }}>
           Practice Question Bank (প্রশ্ন ব্যাংক)
         </h1>
-        <p style={{ color: '#64748b', fontSize: '1rem', maxWidth: '600px', margin: '0 auto' }}>
+        <p style={{ color: 'var(--color-text-muted)', fontSize: '1rem', maxWidth: '600px', margin: '0 auto', lineHeight: 1.6 }}>
           Explore thousands of verified HSC, SSC, and Admission test questions with step-by-step solutions and KaTeX mathematical notation.
         </p>
       </div>
@@ -71,22 +70,20 @@ export default function PublicQuestionsPage() {
       />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <div style={{ fontSize: '0.9rem', color: '#475569', fontWeight: 600 }}>
-          Available Questions: {total}
+        <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
+          Available Questions: <span style={{ color: 'var(--color-primary)' }}>{total}</span>
         </div>
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>Loading practice questions...</div>
+        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--color-text-muted)' }}>Loading practice questions...</div>
       ) : questions.length === 0 ? (
         <div
+          className="card"
           style={{
             textAlign: 'center',
             padding: '3rem',
-            background: '#ffffff',
-            borderRadius: '8px',
-            border: '1px solid #e2e8f0',
-            color: '#64748b',
+            color: 'var(--color-text-muted)',
           }}
         >
           No practice questions found matching your criteria.
@@ -99,7 +96,7 @@ export default function PublicQuestionsPage() {
             ))}
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginTop: '2rem', paddingTop: '1.25rem', borderTop: '1px solid var(--color-border)' }}>
             <button
               className="btn btn-secondary"
               disabled={(!filters.page || filters.page <= 1) && !filters.cursor}
@@ -109,7 +106,7 @@ export default function PublicQuestionsPage() {
               &larr; Previous Page
             </button>
 
-            <span style={{ fontSize: '0.875rem', color: '#64748b', fontWeight: 600 }}>
+            <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
               Page {filters.page || 1}
             </span>
 
@@ -125,7 +122,7 @@ export default function PublicQuestionsPage() {
               }}
               style={{ fontSize: '0.85rem' }}
             >
-              Next Page (Cursor) &rarr;
+              Next Page &rarr;
             </button>
           </div>
         </>

@@ -8,10 +8,10 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
         <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: '#0f172a' }}>Dashboard Overview</h1>
-          <p style={{ fontSize: '0.875rem', color: '#64748b' }}>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--color-text-primary)' }}>Dashboard Overview</h1>
+          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
             Manage questions, review pending submissions, and build curriculum taxonomy.
           </p>
         </div>
@@ -24,42 +24,42 @@ export default async function DashboardPage() {
       {/* Stats Cards Grid */}
       <div className="grid-stats" style={{ marginBottom: '1.5rem' }}>
         <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--color-primary-light)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--color-accent)' }}>
             <FileText size={24} />
           </div>
           <div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0f172a' }}>{stats.totalQuestions}</div>
-            <div style={{ fontSize: '0.875rem', color: '#64748b' }}>Total Questions</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-text-primary)' }}>{stats.totalQuestions}</div>
+            <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>Total Questions</div>
           </div>
         </div>
 
         <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#fffbeb', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#FFFBEB', color: 'var(--color-warning)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #FDE68A' }}>
             <Clock size={24} />
           </div>
           <div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0f172a' }}>{stats.pendingQuestions}</div>
-            <div style={{ fontSize: '0.875rem', color: '#64748b' }}>Pending Review</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-text-primary)' }}>{stats.pendingQuestions}</div>
+            <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>Pending Review</div>
           </div>
         </div>
 
         <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#ecfdf5', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#ECFDF5', color: 'var(--color-success)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #A7F3D0' }}>
             <CheckCircle2 size={24} />
           </div>
           <div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0f172a' }}>{stats.approvedQuestions}</div>
-            <div style={{ fontSize: '0.875rem', color: '#64748b' }}>Approved</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-text-primary)' }}>{stats.approvedQuestions}</div>
+            <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>Approved</div>
           </div>
         </div>
 
         <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#f3e8ff', color: '#9333ea', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--color-primary-light)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--color-accent)' }}>
             <Layers size={24} />
           </div>
           <div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#0f172a' }}>{stats.totalSets}</div>
-            <div style={{ fontSize: '0.875rem', color: '#64748b' }}>Question Sets</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-text-primary)' }}>{stats.totalSets}</div>
+            <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>Question Sets</div>
           </div>
         </div>
       </div>
@@ -75,9 +75,9 @@ export default async function DashboardPage() {
       </div>
 
       {/* Quick Actions & Recent Activity */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
         <div className="card">
-          <h3 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '1rem', color: '#0f172a' }}>
+          <h3 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--color-text-primary)' }}>
             Quick Actions
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -101,17 +101,16 @@ export default async function DashboardPage() {
         </div>
 
         <div className="card">
-          <h3 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '1rem', color: '#0f172a' }}>
+          <h3 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--color-text-primary)' }}>
             System Summary
           </h3>
-          <div style={{ fontSize: '0.875rem', color: '#475569', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <div><strong>Total Test Attempts:</strong> {stats.totalAttempts}</div>
-            <div><strong>Overall Practice Accuracy:</strong> {stats.accuracyRate}%</div>
-            <div><strong>Rejected Submissions:</strong> {stats.rejectedQuestions}</div>
+          <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div><strong style={{ color: 'var(--color-text-primary)' }}>Total Test Attempts:</strong> {stats.totalAttempts}</div>
+            <div><strong style={{ color: 'var(--color-text-primary)' }}>Overall Practice Accuracy:</strong> {stats.accuracyRate}%</div>
+            <div><strong style={{ color: 'var(--color-text-primary)' }}>Rejected Submissions:</strong> {stats.rejectedQuestions}</div>
           </div>
         </div>
       </div>
     </div>
   );
 }
-

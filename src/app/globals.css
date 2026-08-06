@@ -1,22 +1,25 @@
+@import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap');
+
 :root {
-  --color-bg: #f8fafc;
-  --color-surface: #ffffff;
-  --color-border: #e2e8f0;
-  --color-text-primary: #0f172a;
-  --color-text-muted: #64748b;
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
-  --color-primary-light: #eff6ff;
-  --color-accent: #0ea5e9;
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-danger: #ef4444;
-  --radius-sm: 6px;
-  --radius-md: 10px;
+  --color-bg: #FAFAF7;
+  --color-surface: #FFFFFF;
+  --color-border: #E5E7EB;
+  --color-border-hover: #D1D5DB;
+  --color-text-primary: #2D3748;
+  --color-text-muted: #6B7280;
+  --color-primary: #6B8F71;
+  --color-primary-hover: #587A5E;
+  --color-primary-light: #F0F4F1;
+  --color-accent: #A7C4A0;
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+  --color-danger: #EF4444;
+  --radius-sm: 8px;
+  --radius-md: 12px;
   --radius-lg: 16px;
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-  --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.06), 0 4px 6px -2px rgba(15, 23, 42, 0.03);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.02);
+  --shadow-md: 0 4px 12px -2px rgba(45, 55, 72, 0.06), 0 2px 6px -1px rgba(45, 55, 72, 0.03);
+  --shadow-lg: 0 12px 24px -4px rgba(45, 55, 72, 0.08), 0 4px 8px -2px rgba(45, 55, 72, 0.04);
 }
 
 * {
@@ -25,14 +28,20 @@
   padding: 0;
 }
 
+html, body {
+  width: 100%;
+  overflow-x: hidden;
+}
+
 body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family: 'Inter', 'Hind Siliguri', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background-color: var(--color-bg);
   color: var(--color-text-primary);
-  line-height: 1.5;
+  line-height: 1.6;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  -webkit-font-smoothing: antialiased;
 }
 
 a {
@@ -45,7 +54,7 @@ a {
   max-width: 1200px;
   width: 100%;
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 0 1.25rem;
 }
 
 .main-content {
@@ -60,11 +69,11 @@ a {
   border-radius: var(--radius-lg);
   padding: 1.5rem;
   box-shadow: var(--shadow-sm);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .card:hover {
-  border-color: #cbd5e1;
+  border-color: var(--color-border-hover);
   box-shadow: var(--shadow-md);
 }
 
@@ -73,7 +82,7 @@ a {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  font-weight: 500;
+  font-weight: 600;
   font-size: 0.875rem;
   padding: 0.625rem 1.25rem;
   border-radius: var(--radius-md);
@@ -81,6 +90,7 @@ a {
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
+  min-height: 42px;
 }
 
 .btn-primary {
@@ -99,8 +109,8 @@ a {
 }
 
 .btn-secondary:hover {
-  background-color: var(--color-bg);
-  border-color: #cbd5e1;
+  background-color: var(--color-primary-light);
+  border-color: var(--color-accent);
 }
 
 .btn-outline {
@@ -116,7 +126,7 @@ a {
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 0.25rem 0.625rem;
+  padding: 0.25rem 0.75rem;
   font-size: 0.75rem;
   font-weight: 600;
   border-radius: 9999px;
@@ -127,16 +137,19 @@ a {
 .badge-primary {
   background: var(--color-primary-light);
   color: var(--color-primary);
+  border: 1px solid var(--color-accent);
 }
 
 .badge-success {
-  background: #ecfdf5;
+  background: #ECFDF5;
   color: var(--color-success);
+  border: 1px solid #A7F3D0;
 }
 
 .badge-warning {
-  background: #fffbeb;
+  background: #FFFBEB;
   color: var(--color-warning);
+  border: 1px solid #FDE68A;
 }
 
 /* Forms */
@@ -149,7 +162,7 @@ a {
 
 .form-label {
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--color-text-primary);
 }
 
@@ -163,23 +176,25 @@ a {
   color: var(--color-text-primary);
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  min-height: 42px;
 }
 
 .form-input:focus, .form-select:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  box-shadow: 0 0 0 3px rgba(107, 143, 113, 0.2);
 }
 
 /* Header & Navigation */
 .navbar {
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
-  height: 64px;
+  min-height: 64px;
   display: flex;
   align-items: center;
   position: sticky;
   top: 0;
-  z-index: 40;
+  z-index: 50;
+  box-shadow: var(--shadow-sm);
 }
 
 .navbar-inner {
@@ -199,8 +214,8 @@ a {
 }
 
 .logo-icon {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   background: var(--color-primary);
   color: #fff;
   border-radius: var(--radius-sm);
@@ -218,7 +233,7 @@ a {
 
 .nav-link {
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--color-text-muted);
   transition: color 0.15s ease;
 }
@@ -231,10 +246,12 @@ a {
 .dashboard-wrapper {
   display: flex;
   min-height: calc(100vh - 64px);
+  width: 100%;
 }
 
 .sidebar {
   width: 260px;
+  flex-shrink: 0;
   background: var(--color-surface);
   border-right: 1px solid var(--color-border);
   padding: 1.5rem 1rem;
@@ -246,7 +263,7 @@ a {
 .sidebar-menu {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.375rem;
   list-style: none;
 }
 
@@ -256,7 +273,7 @@ a {
   gap: 0.75rem;
   padding: 0.625rem 0.875rem;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--color-text-muted);
   border-radius: var(--radius-md);
   transition: all 0.15s ease;
@@ -270,12 +287,14 @@ a {
 .sidebar-item.active {
   background: var(--color-primary-light);
   color: var(--color-primary);
+  border: 1px solid var(--color-accent);
 }
 
 .dashboard-main {
   flex: 1;
   padding: 2rem;
   overflow-y: auto;
+  max-width: 100%;
 }
 
 /* Utility Grid */
@@ -285,3 +304,66 @@ a {
   gap: 1.25rem;
   margin-bottom: 2rem;
 }
+
+/* Responsiveness Media Queries */
+@media (max-width: 768px) {
+  .app-container {
+    padding: 0 1rem;
+  }
+
+  .main-content {
+    padding: 1.5rem 0 3rem;
+  }
+
+  .dashboard-wrapper {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .sidebar-menu {
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sidebar-item {
+    white-space: nowrap;
+  }
+
+  .dashboard-main {
+    padding: 1.25rem 1rem;
+  }
+
+  .grid-stats {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+  }
+
+  .card {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.8125rem;
+  }
+
+  .nav-links {
+    display: none;
+  }
+
+  .grid-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
