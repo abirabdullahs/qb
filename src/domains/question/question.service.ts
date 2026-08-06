@@ -14,17 +14,30 @@ import { CQSubPartInput } from './cq.schema';
 
 import { createAttachmentRecord, getAttachmentsForEntity } from '../attachment/attachment.repository';
 import { linkTagsToQuestion, fetchQuestionTags } from '../tag/tag.service';
+import { resolveOrCreateTopic } from '../academic/service';
 
 export interface CreateQuestionPayload extends BaseQuestionInput {
   options?: MCQOptionInput[];
   subParts?: CQSubPartInput[];
   attachments?: any[];
   tags?: string[];
+  topicName?: string;
+  topic?: string;
 }
 
 export async function createQuestion(payload: CreateQuestionPayload): Promise<{ question: FullQuestion; isDuplicate: boolean }> {
+  const questionInput = { ...payload };
+  const topicName = typeof questionInput.topicName === 'string'
+    ? questionInput.topicName.trim()
+    : (typeof questionInput.topic === 'string' ? questionInput.topic.trim() : '');
+
+  if (questionInput.branchType === 'academic' && topicName && !questionInput.topicId && questionInput.chapterId) {
+    const resolvedTopic = await resolveOrCreateTopic(Number(questionInput.chapterId), topicName);
+    questionInput.topicId = resolvedTopic.id;
+  }
+
   // Validate base schema
-  const validated = baseQuestionSchema.parse(payload);
+  const validated = baseQuestionSchema.parse(questionInput);
 
   // Compute duplicate hash from questionText or stimulusText
   const fullTextToHash = `${validated.stimulusText || ''} ${validated.questionText}`;

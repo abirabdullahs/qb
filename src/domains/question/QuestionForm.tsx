@@ -26,6 +26,7 @@ export default function QuestionForm({ initialData, onSubmit, isSubmitting = fal
   const [subjectId, setSubjectId] = useState<number>(initialData?.subjectId || 1);
   const [chapterId, setChapterId] = useState<number | undefined>(initialData?.chapterId);
   const [topicId, setTopicId] = useState<number | undefined>(initialData?.topicId);
+  const [topicName, setTopicName] = useState<string>(initialData?.topicName || '');
   const [boards, setBoards] = useState<any[]>([]);
   const [selectedBoardIds, setSelectedBoardIds] = useState<number[]>(initialData?.boardIds || []);
 
@@ -138,6 +139,7 @@ export default function QuestionForm({ initialData, onSubmit, isSubmitting = fal
       subjectId,
       chapterId: branchType === 'academic' ? chapterId : undefined,
       topicId: branchType === 'academic' ? topicId : undefined,
+      topicName: branchType === 'academic' && topicName.trim() ? topicName.trim() : undefined,
       segmentId: branchType === 'academic' ? 1 : undefined,
       admissionSegmentId: branchType === 'admission' ? admissionSegmentId : undefined,
       admissionExamId: branchType === 'admission' ? admissionExamId : undefined,
@@ -215,6 +217,7 @@ export default function QuestionForm({ initialData, onSubmit, isSubmitting = fal
                 setSubjectId(Number(e.target.value));
                 setChapterId(undefined);
                 setTopicId(undefined);
+                setTopicName('');
               }}
             >
               {subjects.map((sub) => (
@@ -233,6 +236,7 @@ export default function QuestionForm({ initialData, onSubmit, isSubmitting = fal
               onChange={(e) => {
                 setChapterId(e.target.value ? Number(e.target.value) : undefined);
                 setTopicId(undefined);
+                setTopicName('');
               }}
             >
               <option value="">-- Select Chapter --</option>
@@ -252,13 +256,24 @@ export default function QuestionForm({ initialData, onSubmit, isSubmitting = fal
               disabled={!chapterId}
               onChange={(e) => setTopicId(e.target.value ? Number(e.target.value) : undefined)}
             >
-              <option value="">-- Select Topic --</option>
+              <option value="">-- Select Existing Topic --</option>
               {currentChapter?.topics?.map((top) => (
                 <option key={top.id} value={top.id}>
                   {top.name}
                 </option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label className="form-label">New Topic Name (optional)</label>
+            <input
+              className="form-input"
+              value={topicName}
+              disabled={!chapterId}
+              placeholder="Type a new topic name to create it automatically"
+              onChange={(e) => setTopicName(e.target.value)}
+            />
           </div>
         </div>
       ) : (

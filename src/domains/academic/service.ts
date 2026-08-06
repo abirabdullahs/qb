@@ -302,6 +302,33 @@ export async function createTopic(chapterId: number, name: string, concept?: str
   return newTop;
 }
 
+export async function resolveOrCreateTopic(chapterId: number, topicName: string, concept?: string, orderNo = 0): Promise<TopicItem> {
+  const trimmedName = topicName.trim();
+  if (!trimmedName) {
+    throw new Error('Topic name is required.');
+  }
+
+  try {
+    const existingTopics = await db.select().from(topics).where(eq(topics.chapterId, chapterId));
+    const matchedTopic = existingTopics.find((topic) => topic.name.toLowerCase() === trimmedName.toLowerCase());
+    if (matchedTopic) {
+      return { ...matchedTopic, subTopics: [] };
+    }
+  } catch {}
+
+  for (const subject of mockSubjects) {
+    const chapter = subject.chapters?.find((item) => item.id === chapterId);
+    if (chapter?.topics) {
+      const matchedTopic = chapter.topics.find((topic) => topic.name.toLowerCase() === trimmedName.toLowerCase());
+      if (matchedTopic) {
+        return matchedTopic;
+      }
+    }
+  }
+
+  return createTopic(chapterId, trimmedName, concept, orderNo);
+}
+
 export async function updateTopicConcept(topicId: number, concept: string): Promise<boolean> {
   try {
     await db.update(topics).set({ concept }).where(eq(topics.id, topicId));
